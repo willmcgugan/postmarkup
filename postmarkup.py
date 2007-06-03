@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 import re
 from urllib import quote, unquote, quote_plus
@@ -22,7 +22,7 @@ except ImportError:
     pygments_available = False
 
 
-def Create(include=None, exclude=None, use_pygments=True):
+def create(include=None, exclude=None, use_pygments=True):
     
     """Create a postmarkup object that coverts bbcode to XML snippets.
     
@@ -87,7 +87,7 @@ def render_bbcode(bbcode, encoding="ascii"):
     
     global _bbcode_postmarkup
     if _bbcode_postmarkup is None:
-        _bbcode_postmarkup = Create()
+        _bbcode_postmarkup = create()
     return _bbcode_postmarkup(bbcode, encoding)
 
 
@@ -100,14 +100,19 @@ re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL)
 re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL)
 
 def remove_markup(post):
+    """Removes html tags from a string."""
     return re_remove_markup.sub("", post)
 
 def get_excerpt(post):
+    """Returns an excerpt between ["] and [/"]
+    
+    post -- BBCode string"""
+    
     match = re_excerpt.search(post)
     if match is None:
         return ""
     excerpt = match.group(0)
-    excerpt=excerpt.replace(u'\n', u"<br/>")
+    excerpt = excerpt.replace(u'\n', u"<br/>")
     return remove_markup(excerpt)
 
 
@@ -120,15 +125,20 @@ class TagBase(object):
         self.name = name
         self.params = None
         self.auto_close = False
-        self.enclosed = False        
+        self.enclosed = False
+        self.open_pos = None
+        self.close_pos = None
+        self.raw = None
                 
     def open(self, open_pos):
-        """Called when the tag is opened. Should return a string or a stringifyable object."""
+        """Called when the tag is opened. Should return a string or a
+        stringifyable object."""
         self.open_pos = open_pos
         return ''
     
     def close(self, close_pos, content):
-        """Called when the tag is closed. Should return a string or a stringifyable object."""
+        """Called when the tag is closed. Should return a string or a
+        stringifyable object."""
         self.close_pos = close_pos
         self.content = content
         return ''
@@ -136,7 +146,8 @@ class TagBase(object):
     def get_tag_contents(self):
         """Gets the contents of the tag."""
         content_elements = self.content[self.open_pos+1:self.close_pos]
-        contents = u"".join([unicode(element) for element in content_elements if isinstance(element, StringToken)])
+        contents = u"".join([unicode(element) for element in content_elements\
+                             if isinstance(element, StringToken)])
         contents = textilize(contents)
         return contents
     
@@ -170,7 +181,7 @@ class SimpleTag(TagBase):
         return u"<%s>"%(self.substitute)
         
     def close(self, close_pos, content):
-        """Called to render the closed tag."""
+        """Called to render the closed tag."""        
         return u"</%s>"%(self.substitute)    
 
 
@@ -193,13 +204,13 @@ class LinkTag(TagBase):
     
     def _open(self):
         if self.params:
-            url=self.params
+            url = self.params
         else:
-            url=self.get_tag_contents()
+            url = self.get_tag_contents()
         
         self.domain = ""
         #Unquote the url
-        self.url=unquote(url)        
+        self.url = unquote(url)        
         
         #Disallow javascript links
         if u"javascript:" in self.url.lower():            
@@ -422,7 +433,8 @@ class PygmentsCodeTag(TagBase):
         try:
             lexer = get_lexer_by_name(self.params, stripall=True)
         except ClassNotFound:
-            return u'<div style="code"><pre>%s</pre>'%postmarkup.Escape(self.get_raw_tag_contents())
+            contents = postmarkup.Escape(self.get_raw_tag_contents())
+            return u'<div style="code"><pre>%s</pre>'%contents
         formatter = HtmlFormatter(linenos=False, cssclass="code")        
         code = self.get_raw_tag_contents()
         result = highlight(code, lexer, formatter)
@@ -704,7 +716,7 @@ class PostMarkup(object):
 
 def test():
         
-    post_markup = Create()
+    post_markup = create()
         
     tests = []
     print """<link rel="stylesheet" href="code.css" type="text/css" />\n"""
@@ -737,7 +749,8 @@ class TagStringify(object):
 [/code]""")
 
     
-    tests.append(u"[img]http://upload.wikimedia.org/wikipedia/commons/6/61/Triops_longicaudatus.jpg[/img]")
+    tests.append(u"[img]http://upload.wikimedia.org/wikipedia/commons"\
+                 "/6/61/Triops_longicaudatus.jpg[/img]")
 
     tests.append("[list][*]Apples[*]Oranges[*]Pears[/list]")
     tests.append("""[list=1]
@@ -751,7 +764,8 @@ class TagStringify(object):
     
     long_test="""[b]Long test[/b]
     
-New lines characters are converted to breaks. Tags my be [b]ove[i]rl[/b]apped[/i].
+New lines characters are converted to breaks."""\
+"""Tags my be [b]ove[i]rl[/b]apped[/i].
     
 [i]Open tags will be closed.
 [b]Test[/b]"""    

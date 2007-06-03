@@ -29,4 +29,5 @@ setup( name='postmarkup',
        description = doclines[0],
        long_description = '\n'.join(doclines[2:]),
        py_modules = ['postmarkup'],
+       classifiers = classifiers.splitlines(),
        )
