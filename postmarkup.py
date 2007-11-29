@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.0.6"
+__version__ = "1.0.7dev"
 
 import re
 from urllib import quote, unquote, quote_plus
@@ -420,6 +420,9 @@ class ListItemTag(TagBase):
 
 class PygmentsCodeTag(TagBase):
 
+    # Set this to True if you want to display line numbers
+    line_numbers = False
+
     def __init__(self, name):
         TagBase.__init__(self, name)
         self.enclosed = True
@@ -442,7 +445,7 @@ class PygmentsCodeTag(TagBase):
             contents = _escape(self.get_raw_tag_contents())
             self.no_close = True
             return u'''<div style="code"><pre>%s</pre></div><div style='display:none'>'''%contents
-        formatter = HtmlFormatter(linenos=False, cssclass="code")
+        formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
         code = self.get_raw_tag_contents()
         result = highlight(code, lexer, formatter)
         return result + u"\n<div style='display:none'>"
@@ -548,10 +551,17 @@ class PostMarkup(object):
             pos = brace_pos
             end_pos = pos+1
 
+            open_tag_pos = post.find(u'[', end_pos)
             end_pos = find_first(post, end_pos, u']=')
             if end_pos == -1:
-                yield post[pos:]
+                yield PostMarkup.TOKEN_TEXT, post[pos:]
                 return
+            
+            if open_tag_pos != -1 and open_tag_pos < end_pos:                
+                yield PostMarkup.TOKEN_TEXT, post[pos:open_tag_pos]
+                end_pos = open_tag_pos
+                pos = end_pos
+                continue
 
             if post[end_pos] == ']':
                 yield PostMarkup.TOKEN_TAG, post[pos:end_pos+1]
@@ -619,7 +629,7 @@ class PostMarkup(object):
         return self.render_to_html(post_markup, encoding)
 
 
-    def render_to_html(self, post_markup, encoding="ascii"):
+    def render_to_html(self, post_markup, encoding="ascii", exclude_tags=None):
         """Converts Post Markup to XHTML.
 
         post_markup -- String containing bbcode
@@ -629,6 +639,9 @@ class PostMarkup(object):
 
         if not isinstance(post_markup, unicode):
             post_markup = unicode(post_markup, encoding, 'replace')
+            
+        if exclude_tags is None:
+            exclude_tags = []
 
         tag_data = {}
         post = []
@@ -681,6 +694,9 @@ class PostMarkup(object):
             if tag_name.startswith(u'/'):
                 end_tag = True
                 tag_name = tag_name[1:]
+                
+            if tag_name in exclude_tags:
+                continue
 
             if not end_tag:
                 if enclosed:
@@ -729,6 +745,8 @@ def test():
 
     tests = []
     print """<link rel="stylesheet" href="code.css" type="text/css" />\n"""
+
+    tests.append(':-[ Hello, [b]World[/b]')
 
     tests.append("[link=http://www.willmcgugan.com]My homepage[/link]")
     tests.append('[link="http://www.willmcgugan.com"]My homepage[/link]')
@@ -790,6 +808,7 @@ New lines characters are converted to breaks."""\
     #tests = []
     # Attempt to inject html in to unicode
     tests.append("[url=http://www.test.com/sfsdfsdf/ter?t=\"></a><h1>HACK</h1><a>\"]Test Hack[/url]")
+    
 
     for test in tests:
         print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))

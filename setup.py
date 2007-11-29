@@ -5,7 +5,7 @@ XHTML snippets. Always outputs valid XHTML, even from badly nested BBCode.
 """
 
 classifiers = """\
-Development Status :: 5 Production/Stable
+Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 Programming Language :: Python
 License :: Public Domain
