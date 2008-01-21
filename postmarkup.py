@@ -23,6 +23,18 @@ except ImportError:
     pygments_available = False
 
 
+re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE| re.UNICODE)
+def url_tagify(s, tag=u'url'):
+        
+    def repl(match):
+        item = match.group(0)
+        return '[%s]%s[/%s]' % (tag, item, tag)
+    
+    return re_url.sub(repl, s)
+    
+    
+
+
 def create(include=None, exclude=None, use_pygments=True):
 
     """Create a postmarkup object that coverts bbcode to XML snippets.
@@ -65,7 +77,7 @@ def create(include=None, exclude=None, use_pygments=True):
     add_tag(u'*', ListItemTag)
 
     if use_pygments:
-        assert pygments_available, "Could not import pygments (http://pygments.org/)"
+        assert pygments_available, "Install pygments (http://pygments.org/) or call create with use_pygments=False"
         add_tag(u'code', PygmentsCodeTag, u'code')
     else:
         add_tag(u'code', SimpleTag, u'code', u'pre')
@@ -194,16 +206,24 @@ class LinkTag(TagBase):
         TagBase.__init__(self, name)
 
     def open(self, open_pos):
+                
         self.open_pos = open_pos
         return TagStringify(self._open, self.raw)
 
-    def close(self, close_pos, content):
+    def close(self, close_pos, content):        
 
         self.close_pos = close_pos
         self.content = content
         return TagStringify(self._close, self.raw)
 
     def _open(self):
+        
+        self.domain = u''
+        nest_level = self.tag_data['link_nest_level'] = self.tag_data.get('link_nest_level', 0) + 1
+        
+        if nest_level > 1:
+            return u""            
+        
         if self.params:
             url = self.params
         else:
@@ -248,7 +268,12 @@ class LinkTag(TagBase):
             return u""
 
     def _close(self):
-
+        
+        self.tag_data['link_nest_level'] -= 1
+        
+        if self.tag_data['link_nest_level'] > 0:
+            return u''
+                
         if self.domain:
             return u'</a>'+self.annotate_link(self.domain)
         else:
@@ -444,7 +469,7 @@ class PygmentsCodeTag(TagBase):
         except ClassNotFound:
             contents = _escape(self.get_raw_tag_contents())
             self.no_close = True
-            return u'''<div style="code"><pre>%s</pre></div><div style='display:none'>'''%contents
+            return u'''<div class="code"><pre>%s</pre></div><div style='display:none'>'''%contents
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
         code = self.get_raw_tag_contents()
         result = highlight(code, lexer, formatter)
@@ -625,11 +650,15 @@ class PostMarkup(object):
         self.tags[name] = PostMarkup.TagFactory(tag_class, *args)
 
 
-    def __call__(self, post_markup, encoding="ascii"):
-        return self.render_to_html(post_markup, encoding)
+    def __call__(self, *args, **kwargs):
+        return self.render_to_html(*args, **kwargs)
 
 
-    def render_to_html(self, post_markup, encoding="ascii", exclude_tags=None):
+    def render_to_html(self,
+                       post_markup,
+                       encoding="ascii",
+                       exclude_tags=None):
+        
         """Converts Post Markup to XHTML.
 
         post_markup -- String containing bbcode
@@ -638,7 +667,7 @@ class PostMarkup(object):
         """
 
         if not isinstance(post_markup, unicode):
-            post_markup = unicode(post_markup, encoding, 'replace')
+            post_markup = unicode(post_markup, encoding, 'replace')        
             
         if exclude_tags is None:
             exclude_tags = []
@@ -746,6 +775,7 @@ def test():
     tests = []
     print """<link rel="stylesheet" href="code.css" type="text/css" />\n"""
 
+    tests.append('[')
     tests.append(':-[ Hello, [b]World[/b]')
 
     tests.append("[link=http://www.willmcgugan.com]My homepage[/link]")
@@ -808,7 +838,8 @@ New lines characters are converted to breaks."""\
     #tests = []
     # Attempt to inject html in to unicode
     tests.append("[url=http://www.test.com/sfsdfsdf/ter?t=\"></a><h1>HACK</h1><a>\"]Test Hack[/url]")
-    
+        
+    tests.append('Nested urls, i.e. [url][url]www.becontrary.com[/url][/url], are condensed in to a single tag.')    
 
     for test in tests:
         print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
@@ -817,7 +848,8 @@ New lines characters are converted to breaks."""\
         print
 
 
-    print render_bbcode("[b]For the lazy, use the render_bbcode function.[/b]")
+    print render_bbcode("[b]For the lazy, use the http://www.willmcgugan.com render_bbcode function.[/b]")
+    
 
 if __name__ == "__main__":
 
