@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.0.7dev"
+__version__ = "1.0.7"
 
 import re
 from urllib import quote, unquote, quote_plus
@@ -792,7 +792,7 @@ def test():
 
     tests.append("[quote Will said...]BBCode is very cool[/quote]")
 
-    tests.append("""[code python]
+    tests.append("""[code]
 # A proxy object that calls a callback when converted to a string
 class TagStringify(object):
     def __init__(self, callback, raw):
