@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.0.10"
+__version__ = "1.1.0"
 
 import re
 from urllib import quote, unquote, quote_plus
@@ -121,9 +121,9 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
     
     if use_pygments:
         assert pygments_available, "Install Pygments (http://pygments.org/) or call create with use_pygments=False"
-        add_tag(PygmentsCodeTag, u'code')
+        add_tag(PygmentsCodeTag, u'code', **kwargs)
     else:
-        add_tag(CodeTag, u'code')
+        add_tag(CodeTag, u'code', **kwargs)
 
     return postmarkup
 
@@ -144,14 +144,14 @@ def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True):
     
     global _postmarkup
     if _postmarkup is None:
-        _postmarkup = create(use_pygments=pygments_available)    
+        _postmarkup = create(use_pygments=pygments_available, pygments_line_numbers=True)    
         
     return _postmarkup(bbcode, encoding, exclude_tags=exclude_tags, auto_urls=auto_urls)
 
 
 class TagBase(object):
     
-    def __init__(self, name, enclosed=False, auto_close=False, inline=False, strip_first_newline=False):
+    def __init__(self, name, enclosed=False, auto_close=False, inline=False, strip_first_newline=False, **kwargs):
         """Base class for all tags.
         
         name -- The name of the bbcode tag
@@ -211,7 +211,7 @@ class SimpleTag(TagBase):
     
     """A tag that can be rendered with a simple substitution. """
     
-    def __init__(self, name, html_name):
+    def __init__(self, name, html_name, **kwargs):
         """ html_name -- the html tag to substitute."""
         TagBase.__init__(self, name, inline=True)
         self.html_name = html_name
@@ -227,7 +227,7 @@ class DivStyleTag(TagBase):
     
     """A simple tag that is replaces with a div and a style."""
     
-    def __init__(self, name, style, value):
+    def __init__(self, name, style, value, **kwargs):
         TagBase.__init__(self, name)
         self.style = style
         self.value = value
@@ -241,7 +241,7 @@ class DivStyleTag(TagBase):
 
 class LinkTag(TagBase):
     
-    def __init__(self, name, annotate_links=True):
+    def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
         
         self.annotate_links = annotate_links
@@ -321,7 +321,7 @@ class LinkTag(TagBase):
 
 class QuoteTag(TagBase):
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, strip_first_newline=True)
             
     def open(self, parser, *args):
@@ -343,7 +343,7 @@ class QuoteTag(TagBase):
     
 class SearchTag(TagBase):
     
-    def __init__(self, name, url, label="", annotate_links=True):
+    def __init__(self, name, url, label="", annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
         self.url = url
         self.label = label
@@ -374,7 +374,7 @@ class SearchTag(TagBase):
     
 class PygmentsCodeTag(TagBase):
     
-    def __init__(self, name, pygments_line_numbers=False):
+    def __init__(self, name, pygments_line_numbers=False, **kwargs):
         TagBase.__init__(self, name, enclosed=True, strip_first_newline=True)
         self.line_numbers = pygments_line_numbers
     
@@ -396,7 +396,7 @@ class PygmentsCodeTag(TagBase):
     
 class CodeTag(TagBase):
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, enclosed=True, strip_first_newline=True)        
     
     def render_open(self, parser, node_index):        
@@ -408,7 +408,7 @@ class CodeTag(TagBase):
  
 class ImgTag(TagBase):
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, inline=True) 
     
     def render_open(self, parser, node_index):
@@ -423,7 +423,7 @@ class ImgTag(TagBase):
 
 class ListTag(TagBase):
     
-    def __init__(self, name):
+    def __init__(self, name,  **kwargs):
         TagBase.__init__(self, name, strip_first_newline=True)
     
     def open(self, parser, params, open_pos, node_index):
@@ -470,7 +470,7 @@ class ListTag(TagBase):
 
 class ListItemTag(TagBase):
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name) 
         self.closed = False       
     
@@ -491,7 +491,7 @@ class SizeTag(TagBase):
     
     valid_chars = frozenset("0123456789")
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, inline=True)
     
     def render_open(self, parser, node_index):
@@ -526,7 +526,7 @@ class ColorTag(TagBase):
     
     valid_chars = frozenset("#0123456789abcdefghijklmnopqrstuvwxyz")
     
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, inline=True)
     
     def render_open(self, parser, node_index):
@@ -549,7 +549,7 @@ class ColorTag(TagBase):
 
 class CenterTag(TagBase):
         
-    def render_open(self, parser, node_index):
+    def render_open(self, parser, node_index, **kwargs):
                         
         return u'<div style="text-align:center">'
         
@@ -789,6 +789,14 @@ class PostMarkup(object):
         add_tag(SimpleTag, u's', u's')
 
 
+    def get_supported_tags(self):
+        
+        """ Returns a list of the supported tags. """
+        
+        return sorted(self.tag_factory.tags.keys())
+        
+
+
     def render_to_html(self,
                        post_markup,
                        encoding="ascii",
@@ -828,6 +836,7 @@ class PostMarkup(object):
         open_stack = []
         tag_stack = []
         break_stack = []
+        remove_next_newline = False
         
         def check_tag_stack(tag_name):
             
@@ -868,14 +877,28 @@ class PostMarkup(object):
                         
             raw_tag_token = tag_token
                                                                         
-            if tag_type == PostMarkup.TOKEN_TEXT:
-                if not enclosed_count:                
-                    redo_break_stack()                
+            if tag_type == PostMarkup.TOKEN_TEXT:                            
                 if parser.no_breaks_count:
                     tag_token = tag_token.strip()
+                    if not tag_token:
+                        continue     
+                if remove_next_newline:
+                    tag_token = tag_token.lstrip(' ')
+                    if tag_token.startswith('\n'):
+                        tag_token = tag_token.lstrip(' ')[1:]
+                        if not tag_token:
+                            continue
+                    remove_next_newline = False                  
+                    
                 if tag_stack and tag_stack[-1].strip_first_newline:
                     tag_token = tag_token.lstrip()        
                     tag_stack[-1].strip_first_newline = False
+                    if not tag_stack[-1]:
+                        tag_stack.pop()
+                        continue
+                    
+                if not enclosed_count:                
+                    redo_break_stack()
                                                                 
                 nodes.append(self.standard_replace(tag_token))
                 continue
@@ -903,9 +926,7 @@ class PostMarkup(object):
             if tag_name.startswith(u'/'):
                 end_tag = True
                 tag_name = tag_name[1:]
-                
-                
-            
+                                
                 
             if enclosed_count and tag_stack[-1].name != tag_name:
                 continue
@@ -951,7 +972,8 @@ class PostMarkup(object):
                        
                    close_tag(tag)
                    
-                   #redo_break_stack()
+                   if not tag.inline:
+                       remove_next_newline = True                   
                    
         if tag_stack:
             redo_break_stack()
@@ -1123,7 +1145,7 @@ def _run_unittests():
         
         def testsimpletag(self):
             
-            postmarkup = create()
+            postmarkup = create()            
                         
             tests= [ ('[b]Hello[/b]', "<strong>Hello</strong>"),
                      ('[i]Italic[/i]', "<em>Italic</em>"),
