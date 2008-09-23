@@ -8,8 +8,9 @@ Author: Will McGugan (http://www.willmcgugan.com)
 __version__ = "1.1.3"
 
 import re
-from urllib import quote, unquote, quote_plus
+from urllib import quote, unquote, quote_plus, urlencode
 from urlparse import urlparse, urlunparse
+from cgi import parse_qs
 
 pygments_available = True
 try:
@@ -241,6 +242,11 @@ class DivStyleTag(TagBase):
 
 class LinkTag(TagBase):
 
+    _safe_chars = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+               'abcdefghijklmnopqrstuvwxyz'
+               '0123456789'
+               '_.-=/&?:')
+
     def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
 
@@ -270,14 +276,9 @@ class LinkTag(TagBase):
             return ""
 
         #Disallow non http: links
-        url_parsed = urlparse(self.url)
+        url_parsed = urlparse(self.url, "http")
         if url_parsed[0] and not url_parsed[0].lower().startswith(u'http'):
             return ""
-
-        #Prepend http: if it is not present
-        if not url_parsed[0]:
-            self.url="http://"+self.url
-            url_parsed = urlparse(self.url)
 
         #Get domain
         self.domain = url_parsed[1].lower()
@@ -286,9 +287,20 @@ class LinkTag(TagBase):
         if self.domain.startswith(u'www.'):
             self.domain = self.domain[4:]
 
-        #Quote the url
-        #self.url="http:"+urlunparse( map(quote, (u"",)+url_parsed[1:]) )
-        self.url= unicode( urlunparse([quote(component.encode("utf-8"), safe='/=&?:+') for component in url_parsed]) )
+        self.url= urlunparse(url_parsed)
+
+        def percent_encode(s):
+            safe_chars = self._safe_chars
+            def replace(c):
+                if c not in safe_chars:
+                    return "%%%02X"%ord(c)
+                else:
+                    return c
+            protocol, uri = s.split(':', 1)
+            uri = "".join([replace(c) for c in uri])
+            return protocol + ":" + uri
+
+        self.url = percent_encode(self.url)
 
         if not self.url:
             return u""
@@ -1141,7 +1153,7 @@ asdasdasdasdqweqwe
 
     print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
 
-    print repr(post_markup('http://www.google.com/search?as_q=bbcode&btnG=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA'))
+    print repr(post_markup('http://www.google.com/search?as_q=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA'))
 
     p = create(use_pygments=False)
     print (p('[code]foo\nbar[/code]'))
