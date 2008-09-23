@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.1.2"
+__version__ = "1.1.3dev"
 
 import re
 from urllib import quote, unquote, quote_plus
@@ -28,7 +28,7 @@ def annotate_link(domain):
     domain -- Domain parsed from url
 
     """
-    return u" [%s]"%domain
+    return u" [%s]"%_escape(domain)
 
 
 re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE| re.UNICODE)
@@ -288,7 +288,7 @@ class LinkTag(TagBase):
 
         #Quote the url
         #self.url="http:"+urlunparse( map(quote, (u"",)+url_parsed[1:]) )
-        self.url= unicode( urlunparse([quote(component, safe='/=&?:+') for component in url_parsed]) )
+        self.url= unicode( urlunparse([quote(component.encode("utf-8"), safe='/=&?:+') for component in url_parsed]) )
 
         if not self.url:
             return u""
@@ -401,7 +401,7 @@ class CodeTag(TagBase):
 
     def render_open(self, parser, node_index):
 
-        contents = _escape(self.get_contents(parser))
+        contents = _escape_no_breaks(self.get_contents(parser))
         self.skip_contents(parser)
         return '<div class="code"><pre>%s</pre></div>' % contents
 
@@ -585,6 +585,8 @@ class MultiReplace:
 def _escape(s):
     return PostMarkup.standard_replace(s.rstrip('\n'))
 
+def _escape_no_breaks(s):
+    return PostMarkup.standard_replace_no_break(s.rstrip('\n'))
 
 class TagFactory(object):
 
@@ -1137,6 +1139,12 @@ asdasdasdasdqweqwe
         print u"<hr/>"
         print
 
+    print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
+
+    print repr(post_markup('http://www.google.com/search?as_q=bbcode&btnG=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA'))
+
+    p = create(use_pygments=False)
+    print (p('[code]foo\nbar[/code]'))
 
     #print render_bbcode("[b]For the lazy, use the http://www.willmcgugan.com render_bbcode function.[/b]")
 
