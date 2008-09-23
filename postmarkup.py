@@ -10,7 +10,6 @@ __version__ = "1.1.3"
 import re
 from urllib import quote, unquote, quote_plus, urlencode
 from urlparse import urlparse, urlunparse
-from cgi import parse_qs
 
 pygments_available = True
 try:
