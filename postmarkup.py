@@ -278,6 +278,10 @@ class LinkTag(TagBase):
             url = 'http://' + url
 
         scheme, uri = url.split(':', 1)
+
+        if scheme not in ['http', 'https']:
+            return u''
+
         try:
             domain = self._re_domain.search(uri.lower()).group(1)
         except IndexError:
