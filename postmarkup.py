@@ -246,7 +246,7 @@ class LinkTag(TagBase):
                '0123456789'
                '_.-=/&?:%&')
 
-    _re_domain = re.compile(r"//([a-zA-Z\.]*)")
+    _re_domain = re.compile(r"//([a-z0-9-\.]*)")
 
     def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
@@ -279,7 +279,7 @@ class LinkTag(TagBase):
 
         scheme, uri = url.split(':', 1)
         try:
-            domain = self._re_domain.search(uri).group(1)
+            domain = self._re_domain.search(uri.lower()).group(1)
         except IndexError:
             return u''
 
