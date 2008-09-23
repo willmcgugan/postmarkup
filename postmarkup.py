@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.1.3dev"
+__version__ = "1.1.3"
 
 import re
 from urllib import quote, unquote, quote_plus
