@@ -244,7 +244,9 @@ class LinkTag(TagBase):
     _safe_chars = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                'abcdefghijklmnopqrstuvwxyz'
                '0123456789'
-               '_.-=/&?:')
+               '_.-=/&?:%&')
+
+    _re_domain = re.compile(r"//([a-zA-Z\.]*)")
 
     def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
@@ -265,28 +267,25 @@ class LinkTag(TagBase):
             url = self.params.strip()
         else:
             url = self.get_contents_text(parser).strip()
+            url = _unescape(url)
 
         self.domain = ""
-        #Unquote the url
-        self.url = unquote(url)
 
-        #Disallow javascript links
-        if u"javascript:" in self.url.lower():
+        if u"javascript:" in url.lower():
             return ""
 
-        #Disallow non http: links
-        url_parsed = urlparse(self.url, "http")
-        if url_parsed[0] and not url_parsed[0].lower().startswith(u'http'):
-            return ""
+        if ':' not in url:
+            url = 'http://' + url
 
-        #Get domain
-        self.domain = url_parsed[1].lower()
+        scheme, uri = url.split(':', 1)
+        try:
+            domain = self._re_domain.search(uri).group(1)
+        except IndexError:
+            return u''
 
-        #Remove www for brevity
-        if self.domain.startswith(u'www.'):
-            self.domain = self.domain[4:]
-
-        self.url= urlunparse(url_parsed)
+        domain = domain.lower()
+        if domain.startswith('www.'):
+            domain = domain[4:]
 
         def percent_encode(s):
             safe_chars = self._safe_chars
@@ -295,11 +294,10 @@ class LinkTag(TagBase):
                     return "%%%02X"%ord(c)
                 else:
                     return c
-            protocol, uri = s.split(':', 1)
-            uri = "".join([replace(c) for c in uri])
-            return protocol + ":" + uri
+            return "".join([replace(c) for c in s])
 
-        self.url = percent_encode(self.url)
+        self.url = percent_encode(url.encode('utf-8', 'replace'))
+        self.domain = domain
 
         if not self.url:
             return u""
@@ -308,6 +306,7 @@ class LinkTag(TagBase):
             return u'<a href="%s">'%self.url
         else:
             return u""
+
 
     def render_close(self, parser, node_index):
 
@@ -599,6 +598,9 @@ def _escape(s):
 def _escape_no_breaks(s):
     return PostMarkup.standard_replace_no_break(s.rstrip('\n'))
 
+def _unescape(s):
+    return PostMarkup.standard_unreplace(s)
+
 class TagFactory(object):
 
     def __init__(self):
@@ -685,6 +687,10 @@ class PostMarkup(object):
                                         u'>':u'&gt;',
                                         u'&':u'&amp;',
                                         u'\n':u'<br/>'})
+
+    standard_unreplace = MultiReplace({  u'&lt;':u'<',
+                                         u'&gt;':u'>',
+                                         u'&amp;':u'&'})
 
     standard_replace_no_break = MultiReplace({  u'<':u'&lt;',
                                                 u'>':u'&gt;',
@@ -1152,7 +1158,7 @@ asdasdasdasdqweqwe
 
     print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
 
-    print repr(post_markup('http://www.google.com/search?as_q=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA'))
+    print repr(post_markup('http://www.google.com/search?as_q=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA&test=hai'))
 
     p = create(use_pygments=False)
     print (p('[code]foo\nbar[/code]'))
