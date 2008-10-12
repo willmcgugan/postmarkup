@@ -42,6 +42,8 @@ def textilize(s):
 re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL)
 re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL)
 
+re_break_groups = re.compile(r'\n+', re.DOTALL)
+
 def remove_markup(post):
     """Removes html tags from a string."""
     return re_remove_markup.sub("", post)
@@ -132,7 +134,7 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
 
 
 _postmarkup = None
-def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True):
+def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, paragraphs=False):
 
     """Renders a bbcode string in to XHTML. This is a shortcut if you don't
     need to customize any tags.
@@ -148,7 +150,7 @@ def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True):
     if _postmarkup is None:
         _postmarkup = create(use_pygments=pygments_available)
 
-    return _postmarkup(bbcode, encoding, exclude_tags=exclude_tags, auto_urls=auto_urls)
+    return _postmarkup(bbcode, encoding, exclude_tags=exclude_tags, auto_urls=auto_urls, paragraphs=paragraphs)
 
 
 class TagBase(object):
@@ -581,8 +583,7 @@ class ParagraphTag(TagBase):
     def render_open(self, parser, node_index, **kwargs):
 
         tag_data = parser.tag_data
-        level = tag_data.setdefault('ParagraphTag.level', 0) + 1
-        tag_data['ParagraphTag.level'] = level
+        level = tag_data.setdefault('ParagraphTag.level', 0)
 
         ret = []
         if level > 1:
@@ -590,6 +591,7 @@ class ParagraphTag(TagBase):
             tag_data['ParagraphTag.level'] -= 1;
 
         ret.append(u'<p>')
+        tag_data['ParagraphTag.level'] += 1;
         return u''.join(ret)
 
     def render_close(self, parser, node_index):
@@ -851,10 +853,55 @@ class PostMarkup(object):
         return sorted(self.tag_factory.tags.keys())
 
 
-    def insert_paragraphs(self, bbcode):
+    def insert_paragraphs(self, post_markup):
+
+        parts = []
+        tag_factory = self.tag_factory
+        enclosed_count = 0
 
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
-            pass
+
+            if tag_type == PostMarkup.TOKEN_TEXT:
+                if enclosed_count:
+                    parts.append(post_markup[start_pos:end_pos])
+                else:
+                    txt = post_markup[start_pos:end_pos]
+                    txt = re_break_groups.sub('[p]', txt)
+                    parts.append(txt)
+                continue
+
+            elif tag_type == PostMarkup.TOKEN_TAG:
+                tag_token = tag_token[1:-1].lstrip()
+                if ' ' in tag_token:
+                    tag_name = tag_token.split(u' ', 1)
+                else:
+                    if '=' in tag_token:
+                        tag_name = tag_token.split(u'=', 1)
+                    else:
+                        tag_name = tag_token
+            else:
+                tag_token = tag_token[1:-1].lstrip()
+                tag_name = tag_token.split(u'=', 1)
+
+            tag_name = tag_name.strip().lower()
+
+            end_tag = False
+            if tag_name.startswith(u'/'):
+                end_tag = True
+                tag_name = tag_name[1:]
+
+            tag = tag_factory.get(tag_name, None)
+            if tag is not None and tag.enclosed:
+                if end_tag:
+                    enclosed_count -= 1
+                else:
+                    enclosed_count += 1
+
+            parts.append(post_markup[start_pos:end_pos])
+
+        new_markup = u"".join(parts)
+        print new_markup
+        return u"".join(new_markup)
 
 
     def render_to_html(self,
@@ -878,6 +925,9 @@ class PostMarkup(object):
 
         if auto_urls:
             post_markup = self.tagify_urls(post_markup)
+
+        if paragraphs:
+            post_markup = self.insert_paragraphs(post_markup)
 
         parser = _Parser(self)
         parser.markup = post_markup
