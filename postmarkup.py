@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.1.3"
+__version__ = "1.1.4dev"
 
 import re
 from urllib import quote, unquote, quote_plus, urlencode
@@ -124,6 +124,8 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
         add_tag(PygmentsCodeTag, u'code', **kwargs)
     else:
         add_tag(CodeTag, u'code', **kwargs)
+
+    add_tag(ParagraphTag, u"p")
 
     return postmarkup
 
@@ -564,13 +566,43 @@ class ColorTag(TagBase):
 class CenterTag(TagBase):
 
     def render_open(self, parser, node_index, **kwargs):
-
         return u'<div style="text-align:center">'
 
 
     def render_close(self, parser, node_index):
-
         return u'</div>'
+
+
+class ParagraphTag(TagBase):
+
+    def __init__(self, name, **kwargs):
+        TagBase.__init__(self, name)
+
+    def render_open(self, parser, node_index, **kwargs):
+
+        tag_data = parser.tag_data
+        level = tag_data.setdefault('ParagraphTag.level', 0) + 1
+        tag_data['ParagraphTag.level'] = level
+
+        ret = []
+        if level > 1:
+            ret.append(u'</p>')
+            tag_data['ParagraphTag.level'] -= 1;
+
+        ret.append(u'<p>')
+        return u''.join(ret)
+
+    def render_close(self, parser, node_index):
+
+        tag_data = parser.tag_data
+        level = tag_data.setdefault('ParagraphTag.level', 0)
+
+        if not level:
+            return u''
+
+        tag_data['ParagraphTag.level'] -= 1;
+
+        return u'</p>'
 
 # http://effbot.org/zone/python-replace.htm
 class MultiReplace:
@@ -819,12 +851,18 @@ class PostMarkup(object):
         return sorted(self.tag_factory.tags.keys())
 
 
+    def insert_paragraphs(self, bbcode):
+
+        for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
+            pass
+
 
     def render_to_html(self,
                        post_markup,
                        encoding="ascii",
                        exclude_tags=None,
-                       auto_urls=True):
+                       auto_urls=True,
+                       paragraphs=True):
 
         """Converts Post Markup to XHTML.
 
@@ -1151,6 +1189,8 @@ asdasdasdasdqweqwe
 [/list]""")
 
 
+    tests = []
+    tests.append("[b][p]Hello, [p]World")
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
@@ -1160,12 +1200,12 @@ asdasdasdasdqweqwe
         print u"<hr/>"
         print
 
-    print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
+    #print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
 
-    print repr(post_markup('http://www.google.com/search?as_q=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA&test=hai'))
+    #print repr(post_markup('http://www.google.com/search?as_q=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA&test=hai'))
 
-    p = create(use_pygments=False)
-    print (p('[code]foo\nbar[/code]'))
+    #p = create(use_pygments=False)
+    #print (p('[code]foo\nbar[/code]'))
 
     #print render_bbcode("[b]For the lazy, use the http://www.willmcgugan.com render_bbcode function.[/b]")
 
@@ -1226,4 +1266,4 @@ def _run_unittests():
 if __name__ == "__main__":
 
     _tests()
-    _run_unittests()
+    #_run_unittests()
