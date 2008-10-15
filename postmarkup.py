@@ -855,7 +855,16 @@ class PostMarkup(object):
 
     def insert_paragraphs(self, post_markup):
 
-        parts = []
+        """Inserts paragraph tags in place of newlines. A more complex task than
+        it may seem -- Multiple newlines result in just one paragraph tag, and
+        paragraph tags aren't inserted inside certain other tags (such as the
+        code tag). Returns a postmarkup string.
+
+        post_markup -- A string containing the raw postmarkup
+
+        """
+
+        parts = [u'[p]']
         tag_factory = self.tag_factory
         enclosed_count = 0
 
@@ -900,8 +909,7 @@ class PostMarkup(object):
             parts.append(post_markup[start_pos:end_pos])
 
         new_markup = u"".join(parts)
-        print new_markup
-        return u"".join(new_markup)
+        return new_markup
 
 
     def render_to_html(self,
