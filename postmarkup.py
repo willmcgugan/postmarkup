@@ -882,15 +882,15 @@ class PostMarkup(object):
             elif tag_type == PostMarkup.TOKEN_TAG:
                 tag_token = tag_token[1:-1].lstrip()
                 if ' ' in tag_token:
-                    tag_name = tag_token.split(u' ', 1)
+                    tag_name = tag_token.split(u' ', 1)[0]
                 else:
                     if '=' in tag_token:
-                        tag_name = tag_token.split(u'=', 1)
+                        tag_name = tag_token.split(u'=', 1)[0]
                     else:
                         tag_name = tag_token
             else:
                 tag_token = tag_token[1:-1].lstrip()
-                tag_name = tag_token.split(u'=', 1)
+                tag_name = tag_token.split(u'=', 1)[0]
 
             tag_name = tag_name.strip().lower()
 
