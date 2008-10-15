@@ -875,7 +875,7 @@ class PostMarkup(object):
                     parts.append(post_markup[start_pos:end_pos])
                 else:
                     txt = post_markup[start_pos:end_pos]
-                    txt = re_break_groups.sub('[p]', txt)
+                    txt = re_break_groups.sub(u'[p]', txt)
                     parts.append(txt)
                 continue
 
