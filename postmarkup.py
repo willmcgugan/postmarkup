@@ -735,26 +735,29 @@ class PostMarkup(object):
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
+    _re_end_eq = re.compile(u"\]|\=")
+    _re_quote_end = re.compile(u'\"|\]')
 
     # I tried to use RE's. Really I did.
     @classmethod
     def tokenize(cls, post):
 
+        re_end_eq = cls._re_end_eq
+        re_quote_end = cls._re_quote_end
+
         text = True
         pos = 0
 
-        def find_first(post, pos, c):
-            f1 = post.find(c[0], pos)
-            f2 = post.find(c[1], pos)
-            if f1 == -1:
-                return f2
-            if f2 == -1:
-                return f1
-            return min(f1, f2)
+        def find_first(post, pos, re_ff):
+            try:
+                return re_ff.search(post, pos).start()
+            except AttributeError:
+                return -1
 
+        post_find = post.find
         while True:
 
-            brace_pos = post.find(u'[', pos)
+            brace_pos = post_find(u'[', pos)
             if brace_pos == -1:
                 if pos<len(post):
                     yield PostMarkup.TOKEN_TEXT, post[pos:], pos, len(post)
@@ -765,8 +768,8 @@ class PostMarkup(object):
             pos = brace_pos
             end_pos = pos+1
 
-            open_tag_pos = post.find(u'[', end_pos)
-            end_pos = find_first(post, end_pos, u']=')
+            open_tag_pos = post_find(u'[', end_pos)
+            end_pos = find_first(post, end_pos, re_end_eq)
             if end_pos == -1:
                 yield PostMarkup.TOKEN_TEXT, post[pos:], pos, len(post)
                 return
@@ -788,19 +791,19 @@ class PostMarkup(object):
                     while post[end_pos] == ' ':
                         end_pos += 1
                     if post[end_pos] != '"':
-                        end_pos = post.find(u']', end_pos+1)
+                        end_pos = post_find(u']', end_pos+1)
                         if end_pos == -1:
                             return
                         yield PostMarkup.TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
                     else:
-                        end_pos = find_first(post, end_pos, u'"]')
+                        end_pos = find_first(post, end_pos, re_quote_end)
                         if end_pos==-1:
                             return
                         if post[end_pos] == '"':
-                            end_pos = post.find(u'"', end_pos+1)
+                            end_pos = post_find(u'"', end_pos+1)
                             if end_pos == -1:
                                 return
-                            end_pos = post.find(u']', end_pos+1)
+                            end_pos = post_find(u']', end_pos+1)
                             if end_pos == -1:
                                 return
                             yield PostMarkup.TOKEN_PTAG, post[pos:end_pos+1], pos, end_pos+1
@@ -1122,9 +1125,8 @@ class PostMarkup(object):
 
         return u"".join(text)
 
+    # A shortcut for render_to_html
     __call__ = render_to_html
-
-
 
 
 
@@ -1319,9 +1321,48 @@ def _run_unittests():
     unittest.TextTestRunner(verbosity=2).run(suite)
 
 
+def ff_test():
+
+    def ff1(post, pos, c1, c2):
+        f1 = post.find(c1, pos)
+        f2 = post.find(c2, pos)
+        if f1 == -1:
+            return f2
+        if f2 == -1:
+            return f1
+        return min(f1, f2)
+
+    re_ff=re.compile('a|b')
+
+    def ff2(post, pos, c1, c2):
+        try:
+            return re_ff.search(post).start(0)
+        except AttributeError:
+            return -1
+
+    text = u"sdl;fk;sdlfks;dflksd;flksdf;slbdfkwelrkwelrkjal;sdfksdl;fksdf;lb"
+
+    REPEAT = 10000
+
+    from time import time
+
+    start = time()
+    for n in xrange(REPEAT):
+        ff1(text, 0, "a", "b")
+    end = time()
+    print end - start
+
+    start = time()
+    for n in xrange(REPEAT):
+        ff2(text, 0, "a", "b")
+    end = time()
+    print end - start
+
+
 
 
 if __name__ == "__main__":
 
     _tests()
     _run_unittests()
+    #ff_test()
