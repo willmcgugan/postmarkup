@@ -586,7 +586,7 @@ class ParagraphTag(TagBase):
         level = tag_data.setdefault('ParagraphTag.level', 0)
 
         ret = []
-        if level > 1:
+        if level > 0:
             ret.append(u'</p>')
             tag_data['ParagraphTag.level'] -= 1;
 
@@ -613,8 +613,7 @@ class MultiReplace:
 
         # string to string mapping; use a regular expression
         keys = repl_dict.keys()
-        keys.sort() # lexical order
-        keys.reverse() # use longest match first
+        keys.sort(reverse=True) # lexical order
         pattern = u"|".join([re.escape(key) for key in keys])
         self.pattern = re.compile(pattern)
         self.dict = repl_dict
@@ -1247,8 +1246,9 @@ asdasdasdasdqweqwe
 [/list]""")
 
 
-    tests = []
+    #tests = []
     tests.append("[b][p]Hello, [p]World")
+    tests.append("[p][p][p]")
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
