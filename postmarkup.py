@@ -1332,21 +1332,17 @@ def ff_test():
             return f1
         return min(f1, f2)
 
-    re_ff=re.compile('£|&')
+    re_ff=re.compile('a|b')
 
     def ff2(post, pos, c1, c2):
         try:
             return re_ff.search(post).group(0)
         except AttributeError:
             return -1
-        if g:
-            return g.group(0)
-        else:
-            return -1
 
     text = u"sdl;fk;sdlfks;dflksd;flksdf;slbdfkwelrkwelrkjal;sdfksdl;fksdf;lb"
 
-    REPEAT = 10000
+    REPEAT = 100000
 
     from time import time
 
