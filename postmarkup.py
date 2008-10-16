@@ -916,7 +916,7 @@ class PostMarkup(object):
                        encoding="ascii",
                        exclude_tags=None,
                        auto_urls=True,
-                       paragraphs=True):
+                       paragraphs=False):
 
         """Converts Post Markup to XHTML.
 
@@ -1324,4 +1324,4 @@ def _run_unittests():
 if __name__ == "__main__":
 
     _tests()
-    #_run_unittests()
+    _run_unittests()
