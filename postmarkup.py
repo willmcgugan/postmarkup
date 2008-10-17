@@ -31,38 +31,34 @@ def annotate_link(domain):
     return u" [%s]"%_escape(domain)
 
 
-re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE| re.UNICODE)
+_re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE| re.UNICODE)
 
 
-re_html=re.compile('<.*?>|\&.*?\;')
+_re_html=re.compile('<.*?>|\&.*?\;')
 def textilize(s):
     """Remove markup from html"""
-    return re_html.sub("", s)
+    return _re_html.sub("", s)
 
-re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL)
-re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL)
+_re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL)
+_re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL)
 
-re_break_groups = re.compile(r'\n+', re.DOTALL)
-
-def remove_markup(post):
-    """Removes html tags from a string."""
-    return re_remove_markup.sub("", post)
+_re_break_groups = re.compile(r'\n+', re.DOTALL)
 
 def get_excerpt(post):
     """Returns an excerpt between ["] and [/"]
 
     post -- BBCode string"""
 
-    match = re_excerpt.search(post)
+    match = _re_excerpt.search(post)
     if match is None:
         return ""
     excerpt = match.group(0)
     excerpt = excerpt.replace(u'\n', u"<br/>")
-    return remove_markup(excerpt)
+    return _re_remove_markup.sub("", excerpt)
 
 def strip_bbcode(bbcode):
 
-    """ Strips bbcode tags from a string.
+    """Strips bbcode tags from a string.
 
     bbcode -- A string to remove tags from
 
@@ -81,6 +77,8 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
                If omitted, no tags will be excluded
     use_pygments -- If True, Pygments (http://pygments.org/) will be used for the code tag,
                     otherwise it will use <pre>code</pre>
+    kwargs -- Remaining keyword arguments are passed to tag constructors.
+    
     """
 
     postmarkup = PostMarkup()
@@ -827,7 +825,7 @@ class PostMarkup(object):
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):
 
             if tag_type == TOKEN_TEXT:
-                text_tokens.append(re_url.sub(repl, tag_token))
+                text_tokens.append(_re_url.sub(repl, tag_token))
             else:
                 text_tokens.append(tag_token)
 
@@ -880,7 +878,7 @@ class PostMarkup(object):
                     parts.append(post_markup[start_pos:end_pos])
                 else:
                     txt = post_markup[start_pos:end_pos]
-                    txt = re_break_groups.sub(u'[p]', txt)
+                    txt = _re_break_groups.sub(u'[p]', txt)
                     parts.append(txt)
                 continue
 
@@ -1324,7 +1322,7 @@ def _run_unittests():
     unittest.TextTestRunner(verbosity=2).run(suite)
 
 
-def ff_test():
+def _ff_test():
 
     def ff1(post, pos, c1, c2):
         f1 = post.find(c1, pos)
@@ -1368,4 +1366,4 @@ if __name__ == "__main__":
 
     _tests()
     _run_unittests()
-    #ff_test()
+    #_ff_test()
