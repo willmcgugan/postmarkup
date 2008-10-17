@@ -137,34 +137,6 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
 
     return postmarkup
 
-
-_postmarkup = None
-_postmarkup_lock = RLock()
-def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, paragraphs=False):
-
-    """Renders a bbcode string in to XHTML. This is a shortcut if you don't
-    need to customize any tags.
-
-    bbcode -- A string containing the bbcode
-    encoding -- If bbcode is not unicode, then then it will be encoded with
-    this encoding (defaults to 'ascii'). Ignore the encoding if you already have
-    a unicode string
-
-    """
-
-    # Creating the postmarkup object probably isn't threadsafe, so this needs
-    # to be syncronized. Rendering postmarkup is safe, however.
-    _postmarkup_lock.acquire()
-    try:
-        global _postmarkup
-        if _postmarkup is None:
-            _postmarkup = create(use_pygments=pygments_available)
-    finally:
-        _postmarkup_lock.release()
-
-    return _postmarkup(bbcode, encoding, exclude_tags=exclude_tags, auto_urls=auto_urls, paragraphs=paragraphs)
-
-
 class TagBase(object):
 
     def __init__(self, name, enclosed=False, auto_close=False, inline=False, strip_first_newline=False, **kwargs):
@@ -1154,6 +1126,28 @@ class PostMarkup(object):
     __call__ = render_to_html
 
 
+_postmarkup = create(use_pygments=pygments_available)
+def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, paragraphs=False):
+
+    """Renders a bbcode string in to XHTML. This is a shortcut if you don't
+    need to customize any tags.
+
+    bbcode -- A string containing the bbcode
+    encoding -- If bbcode is not unicode, then then it will be encoded with
+    this encoding (defaults to 'ascii'). Ignore the encoding if you already have
+    a unicode string
+
+    """
+    return _postmarkup(bbcode,
+                       encoding,
+                       exclude_tags=exclude_tags,
+                       auto_urls=auto_urls,
+                       paragraphs=paragraphs)
+
+
+
+
+
 
 def _tests():
 
@@ -1382,7 +1376,6 @@ def _ff_test():
         ff2(text, 0, "a", "b")
     end = time()
     print end - start
-
 
 
 
