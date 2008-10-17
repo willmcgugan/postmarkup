@@ -382,10 +382,10 @@ class SearchTag(TagBase):
     def render_close(self, parser, node_index):
 
         if self.label:
-            ret = u'</a>'
             if self.annotate_links:
-                ret += annotate_link(self.label)
-            return ret
+                return u'</a>'+ annotate_link(self.label)
+            else:
+                return u'</a>'
         else:
             return u''
 
@@ -754,16 +754,18 @@ class PostMarkup(object):
             except AttributeError:
                 return -1
 
+        TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
+
         post_find = post.find
         while True:
 
             brace_pos = post_find(u'[', pos)
             if brace_pos == -1:
                 if pos<len(post):
-                    yield PostMarkup.TOKEN_TEXT, post[pos:], pos, len(post)
+                    yield TOKEN_TEXT, post[pos:], pos, len(post)
                 return
             if brace_pos - pos > 0:
-                yield PostMarkup.TOKEN_TEXT, post[pos:brace_pos], pos, brace_pos
+                yield TOKEN_TEXT, post[pos:brace_pos], pos, brace_pos
 
             pos = brace_pos
             end_pos = pos+1
@@ -771,17 +773,17 @@ class PostMarkup(object):
             open_tag_pos = post_find(u'[', end_pos)
             end_pos = find_first(post, end_pos, re_end_eq)
             if end_pos == -1:
-                yield PostMarkup.TOKEN_TEXT, post[pos:], pos, len(post)
+                yield TOKEN_TEXT, post[pos:], pos, len(post)
                 return
 
             if open_tag_pos != -1 and open_tag_pos < end_pos:
-                yield PostMarkup.TOKEN_TEXT, post[pos:open_tag_pos], pos, open_tag_pos
+                yield TOKEN_TEXT, post[pos:open_tag_pos], pos, open_tag_pos
                 end_pos = open_tag_pos
                 pos = end_pos
                 continue
 
             if post[end_pos] == ']':
-                yield PostMarkup.TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
+                yield TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
                 pos = end_pos+1
                 continue
 
@@ -794,7 +796,7 @@ class PostMarkup(object):
                         end_pos = post_find(u']', end_pos+1)
                         if end_pos == -1:
                             return
-                        yield PostMarkup.TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
+                        yield TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
                     else:
                         end_pos = find_first(post, end_pos, re_quote_end)
                         if end_pos==-1:
@@ -806,9 +808,9 @@ class PostMarkup(object):
                             end_pos = post_find(u']', end_pos+1)
                             if end_pos == -1:
                                 return
-                            yield PostMarkup.TOKEN_PTAG, post[pos:end_pos+1], pos, end_pos+1
+                            yield TOKEN_PTAG, post[pos:end_pos+1], pos, end_pos+1
                         else:
-                            yield PostMarkup.TOKEN_TAG, post[pos:end_pos+1], pos, end_pos
+                            yield TOKEN_TAG, post[pos:end_pos+1], pos, end_pos
                     pos = end_pos+1
                 except IndexError:
                     return
@@ -821,9 +823,10 @@ class PostMarkup(object):
             return u'[url]%s[/url]' % match.group(0)
 
         text_tokens = []
+        TOKEN_TEXT = PostMarkup.TOKEN_TEXT
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):
 
-            if tag_type == PostMarkup.TOKEN_TEXT:
+            if tag_type == TOKEN_TEXT:
                 text_tokens.append(re_url.sub(repl, tag_token))
             else:
                 text_tokens.append(tag_token)
@@ -1340,7 +1343,7 @@ def ff_test():
         except AttributeError:
             return -1
 
-    text = u"sdl;fk;sdlfks;dflksd;flksdf;slbdfkwelrkwelrkjal;sdfksdl;fksdf;lb"
+    text = u"sdl;fk;sdlfks;dflksd;flksdfsdfwerwerwgwegwegwegwegwegegwweggewwegwegwegwettttttttttttttttttttttttttttttttttgggggggggg;slbdfkwelrkwelrkjal;sdfksdl;fksdf;lb"
 
     REPEAT = 100000
 
@@ -1365,4 +1368,4 @@ if __name__ == "__main__":
 
     _tests()
     _run_unittests()
-    ff_test()
+    #ff_test()
