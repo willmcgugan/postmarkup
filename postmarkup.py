@@ -21,6 +21,11 @@ except ImportError:
     pygments_available = False
 
 
+try:
+    from threading import RLock
+except ImportError:
+    from dummy_threading import RLock
+
 
 def annotate_link(domain):
     """This function is called by the url tag. Override to disable or change behaviour.
@@ -69,7 +74,10 @@ def strip_bbcode(bbcode):
 
 def create(include=None, exclude=None, use_pygments=True, **kwargs):
 
-    """Create a postmarkup object that converts bbcode to XML snippets.
+    """Create a postmarkup object that converts bbcode to XML snippets. Note
+    that creating postmarkup objects is _not_ threadsafe, but rendering the
+    html _is_ threadsafe. So typically you will need just one postmarkup instance
+    to render the bbcode accross threads.
 
     include -- List or similar iterable containing the names of the tags to use
                If omitted, all tags will be used
@@ -78,7 +86,7 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
     use_pygments -- If True, Pygments (http://pygments.org/) will be used for the code tag,
                     otherwise it will use <pre>code</pre>
     kwargs -- Remaining keyword arguments are passed to tag constructors.
-    
+
     """
 
     postmarkup = PostMarkup()
@@ -130,8 +138,8 @@ def create(include=None, exclude=None, use_pygments=True, **kwargs):
     return postmarkup
 
 
-
 _postmarkup = None
+_postmarkup_lock = RLock()
 def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, paragraphs=False):
 
     """Renders a bbcode string in to XHTML. This is a shortcut if you don't
@@ -144,9 +152,15 @@ def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, p
 
     """
 
-    global _postmarkup
-    if _postmarkup is None:
-        _postmarkup = create(use_pygments=pygments_available)
+    # Creating the postmarkup object probably isn't threadsafe, so this needs
+    # to be syncronized. Rendering postmarkup is safe, however.
+    _postmarkup_lock.acquire()
+    try:
+        global _postmarkup
+        if _postmarkup is None:
+            _postmarkup = create(use_pygments=pygments_available)
+    finally:
+        _postmarkup_lock.release()
 
     return _postmarkup(bbcode, encoding, exclude_tags=exclude_tags, auto_urls=auto_urls, paragraphs=paragraphs)
 
@@ -871,9 +885,12 @@ class PostMarkup(object):
         tag_factory = self.tag_factory
         enclosed_count = 0
 
+        TOKEN_TEXT = PostMarkup.TOKEN_TEXT
+        TOKEN_TAG = PostMarkup.TOKEN_TAG
+
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
 
-            if tag_type == PostMarkup.TOKEN_TEXT:
+            if tag_type == TOKEN_TEXT:
                 if enclosed_count:
                     parts.append(post_markup[start_pos:end_pos])
                 else:
@@ -882,7 +899,7 @@ class PostMarkup(object):
                     parts.append(txt)
                 continue
 
-            elif tag_type == PostMarkup.TOKEN_TAG:
+            elif tag_type == TOKEN_TAG:
                 tag_token = tag_token[1:-1].lstrip()
                 if ' ' in tag_token:
                     tag_name = tag_token.split(u' ', 1)[0]
@@ -922,12 +939,16 @@ class PostMarkup(object):
                        auto_urls=True,
                        paragraphs=False):
 
-        """Converts Post Markup to XHTML.
+        """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
+        buy virtue that the state is entirely stored on the stack.
 
         post_markup -- String containing bbcode.
-        encoding -- Encoding of string, defaults to "ascii".
+        encoding -- Encoding of string, defaults to "ascii" if the string is not
+        already unicode.
         exclude_tags -- A collection of tag names to ignore.
         auto_urls -- If True, then urls will be wrapped with url bbcode tags.
+        paragraphs -- If True then line breaks will be replaces with paragraph
+        tags, rather than break tags.
 
         """
 
@@ -994,12 +1015,15 @@ class PostMarkup(object):
                 return tag.render_close(parser, node_index)
             nodes.append(call)
 
+        TOKEN_TEXT = PostMarkup.TOKEN_TEXT
+        TOKEN_TAG = PostMarkup.TOKEN_TAG
+
         # Pass 1
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
 
             raw_tag_token = tag_token
 
-            if tag_type == PostMarkup.TOKEN_TEXT:
+            if tag_type == TOKEN_TEXT:
                 if parser.no_breaks_count:
                     tag_token = tag_token.strip()
                     if not tag_token:
@@ -1025,7 +1049,7 @@ class PostMarkup(object):
                 nodes.append(self.standard_replace(tag_token))
                 continue
 
-            elif tag_type == PostMarkup.TOKEN_TAG:
+            elif tag_type == TOKEN_TAG:
                 tag_token = tag_token[1:-1].lstrip()
                 if ' ' in tag_token:
                     tag_name, tag_attribs = tag_token.split(u' ', 1)
