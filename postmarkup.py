@@ -36,18 +36,18 @@ def annotate_link(domain):
     return u" [%s]"%_escape(domain)
 
 
-_re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE| re.UNICODE)
+_re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE|re.UNICODE)
 
 
-_re_html=re.compile('<.*?>|\&.*?\;')
+_re_html=re.compile('<.*?>|\&.*?\;', re.UNICODE)
 def textilize(s):
     """Remove markup from html"""
     return _re_html.sub("", s)
 
-_re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL)
-_re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL)
+_re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL|re.UNICODE)
+_re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL|re.UNICODE)
 
-_re_break_groups = re.compile(r'\n+', re.DOTALL)
+_re_break_groups = re.compile(r'\n+', re.DOTALL|re.UNICODE)
 
 def get_excerpt(post):
     """Returns an excerpt between ["] and [/"]
@@ -234,7 +234,7 @@ class LinkTag(TagBase):
                '0123456789'
                '_.-=/&?:%&')
 
-    _re_domain = re.compile(r"//([a-z0-9-\.]*)")
+    _re_domain = re.compile(r"//([a-z0-9-\.]*)", re.UNICODE)
 
     def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
@@ -719,8 +719,8 @@ class PostMarkup(object):
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
-    _re_end_eq = re.compile(u"\]|\=")
-    _re_quote_end = re.compile(u'\"|\]')
+    _re_end_eq = re.compile(u"\]|\=", re.UNICODE)
+    _re_quote_end = re.compile(u'\"|\]', re.UNICODE)
 
     # I tried to use RE's. Really I did.
     @classmethod
