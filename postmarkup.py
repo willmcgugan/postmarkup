@@ -1351,7 +1351,7 @@ def _ff_test():
             return f1
         return min(f1, f2)
 
-    re_ff=re.compile('a|b')
+    re_ff=re.compile('a|b', re.UNICODE)
 
     def ff2(post, pos, c1, c2):
         try:
