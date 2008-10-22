@@ -1136,9 +1136,9 @@ def render_bbcode(bbcode,
     a unicode string
     exclude_tags -- A collection of tags to ignore in the bbcode, or None to
     not ignore any tags
-    auto_urls -- If True, urls will be converted to [link] tags.
+    auto_urls -- If True, urls will be converted to [link] tags (default is True).
     paragraphs -- If True, then line breaks will be converted to paragraph tags
-    rather than html breaks <br>.
+    rather than html breaks <br> (default is False).
 
     """
     return _postmarkup(bbcode,
