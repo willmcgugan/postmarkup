@@ -1121,7 +1121,11 @@ class PostMarkup(object):
 
 
 _postmarkup = create(use_pygments=pygments_available)
-def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, paragraphs=False):
+def render_bbcode(bbcode,
+                  encoding="ascii",
+                  exclude_tags=None,
+                  auto_urls=True,
+                  paragraphs=False):
 
     """Renders a bbcode string in to XHTML. This is a shortcut if you don't
     need to customize any tags.
@@ -1130,6 +1134,11 @@ def render_bbcode(bbcode, encoding="ascii", exclude_tags=None, auto_urls=True, p
     encoding -- If bbcode is not unicode, then then it will be encoded with
     this encoding (defaults to 'ascii'). Ignore the encoding if you already have
     a unicode string
+    exclude_tags -- A collection of tags to ignore in the bbcode, or None to
+    not ignore any tags
+    auto_urls -- If True, urls will be converted to [link] tags.
+    paragraphs -- If True, then line breaks will be converted to paragraph tags
+    rather than html breaks <br>.
 
     """
     return _postmarkup(bbcode,
