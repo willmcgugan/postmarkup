@@ -21,12 +21,6 @@ except ImportError:
     pygments_available = False
 
 
-try:
-    from threading import RLock
-except ImportError:
-    from dummy_threading import RLock
-
-
 def annotate_link(domain):
     """This function is called by the url tag. Override to disable or change behaviour.
 
@@ -1270,6 +1264,8 @@ asdasdasdasdqweqwe
     #tests = []
     tests.append("[b][p]Hello, [p]World")
     tests.append("[p][p][p]")
+
+    tests.append("http://www.google.com/search?as_q=bbcode&btnG=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA")
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
