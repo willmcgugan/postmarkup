@@ -546,7 +546,7 @@ class ColorTag(TagBase):
 class CenterTag(TagBase):
 
     def render_open(self, parser, node_index, **kwargs):
-        return u'<div style="text-align:center">'
+        return u'<div style="text-align:center;">'
 
 
     def render_close(self, parser, node_index):
