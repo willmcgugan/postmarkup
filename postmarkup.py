@@ -584,6 +584,31 @@ class ParagraphTag(TagBase):
 
         return u'</p>'
 
+class SectionTag(TagBase):
+
+    """A specialised tag that stores its contents in a dictionary. Can be
+    used to define extra contents areas.
+
+    """
+
+    def __init__(self, name, **kwargs):
+        TagBase.__init__(self, name, enclosed=True)
+
+    def render_open(self, parser, node_index):
+
+        self.section_name = self.params.strip().lower().replace(u' ', u'_')
+
+        contents = self.get_contents(parser)
+        self.skip_contents(parser)
+
+        tag_data = parser.tag_data
+        sections = tag_data.setdefault('sections', {})
+
+        sections.setdefault(self.section_name, []).append(contents)
+
+        return u''
+
+
 # http://effbot.org/zone/python-replace.htm
 class MultiReplace:
 
@@ -657,10 +682,13 @@ class _Parser(object):
 
     """ This is an interface to the parser, used by Tag classes. """
 
-    def __init__(self, post_markup):
+    def __init__(self, post_markup, tag_data=None):
 
         self.pm = post_markup
-        self.tag_data = {}
+        if tag_data is None:
+            self.tag_data = {}
+        else:
+            self.tag_data = tag_data
         self.render_node_index = 0
 
     def skip_to_node(self, node_index):
@@ -793,6 +821,9 @@ class PostMarkup(object):
                 except IndexError:
                     return
 
+    def add_tag(self, cls, name, *args, **kwargs):
+        return self.tag_factory.add_tag(cls, name, *args, **kwargs)
+
     def tagify_urls(self, postmarkup ):
 
         """ Surrounds urls with url bbcode tags. """
@@ -903,7 +934,8 @@ class PostMarkup(object):
                        encoding="ascii",
                        exclude_tags=None,
                        auto_urls=True,
-                       paragraphs=False):
+                       paragraphs=False,
+                       tag_data=None):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
         buy virtue that the state is entirely stored on the stack.
@@ -915,6 +947,9 @@ class PostMarkup(object):
         auto_urls -- If True, then urls will be wrapped with url bbcode tags.
         paragraphs -- If True then line breaks will be replaces with paragraph
         tags, rather than break tags.
+        tag_data -- An optional dictionary to store tag data in. The default of
+        None will create a dictionary internally.
+
 
         """
 
@@ -927,7 +962,7 @@ class PostMarkup(object):
         if paragraphs:
             post_markup = self.insert_paragraphs(post_markup)
 
-        parser = _Parser(self)
+        parser = _Parser(self, tag_data=tag_data)
         parser.markup = post_markup
 
         if exclude_tags is None:
@@ -1293,6 +1328,20 @@ asdasdasdasdqweqwe
 
     #print render_bbcode("[b]For the lazy, use the http://www.willmcgugan.com render_bbcode function.[/b]")
 
+    smarkup = create()
+    smarkup.add_tag(SectionTag, 'section')
+
+    test = """Hello, World.
+    [section sidebar]This is the [b]sidebar[/b][/section]
+    [section footer]
+    This is the footer
+    [/section]
+    More text
+    """
+
+    tag_data = {}
+    print smarkup(test, tag_data=tag_data)
+    print tag_data
 
 def _run_unittests():
 
