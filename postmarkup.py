@@ -1338,11 +1338,11 @@ asdasdasdasdqweqwe
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
-    #for test in tests:
-    #    print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
-    #    print u"<p>%s</p>"%str(post_markup(test).encode("ascii", "xmlcharrefreplace"))
-    #    print u"<hr/>"
-    #    print
+    for test in tests:
+        print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
+        print u"<p>%s</p>"%str(post_markup(test).encode("ascii", "xmlcharrefreplace"))
+        print u"<hr/>"
+        print
 
     #print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
 
@@ -1356,7 +1356,7 @@ asdasdasdasdqweqwe
     smarkup = create()
     smarkup.add_tag(SectionTag, 'section')
 
-    test = """[b]Hello, World.
+    test = """Hello, World.
     [section sidebar]This is the [b]sidebar[/b][/section]
     [section footer]
     This is the footer
@@ -1364,8 +1364,8 @@ asdasdasdasdqweqwe
     More text
     """
 
+    print smarkup(test, paragraphs=True, clean=False)
     tag_data = {}
-    print smarkup(test, tag_data=tag_data, paragraphs=True, clean=False)
     print smarkup(test, tag_data=tag_data, paragraphs=True, clean=True)
     print tag_data
 
