@@ -934,7 +934,9 @@ class PostMarkup(object):
     @classmethod
     def cleanup_html(cls, html):
         """Cleans up html. Currently only removes blank tags, i.e. tags containing only
-        whitespace. Only applies to tags without attributes."""
+        whitespace. Only applies to tags without attributes. Tag removal is done
+        recurively until there are no more blank tags. So <strong><em></em></strong>
+        would be completely removed."""
 
         MAX_PASSES = 10 # To avoid a potentialy unbounded loop
         passes = MAX_PASSES
