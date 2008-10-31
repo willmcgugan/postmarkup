@@ -935,17 +935,17 @@ class PostMarkup(object):
     def cleanup_html(cls, html):
         """Cleans up html. Currently only removes blank tags, i.e. tags containing only
         whitespace. Only applies to tags without attributes. Tag removal is done
-        recurively until there are no more blank tags. So <strong><em></em></strong>
-        would be completely removed."""
+        recursively until there are no more blank tags. So <strong><em></em></strong>
+        would be completely removed.
 
-        MAX_PASSES = 10 # To avoid a potentialy unbounded loop
-        passes = MAX_PASSES
-        while True:
-            cleaned_html = cls._re_blank_tags.sub(u"", html)
-            passes -= 1
-            if html == cleaned_html or passes <= 0:
-                break
-            html = cleaned_html
+        html -- A string containing (X)HTML
+
+        """
+
+        original_html = ''
+        while original_html != html:
+            original_html = html
+            html = cls._re_blank_tags.sub(u"", html)
         return html
 
 
@@ -966,11 +966,12 @@ class PostMarkup(object):
         already unicode.
         exclude_tags -- A collection of tag names to ignore.
         auto_urls -- If True, then urls will be wrapped with url bbcode tags.
-        paragraphs -- If True then line breaks will be replaces with paragraph
+        paragraphs -- If True then line breaks will be replaced with paragraph
         tags, rather than break tags.
-        clean -- If True, html will be run through a cleanup_html method.
+        clean -- If True, html will be run through the cleanup_html method.
         tag_data -- An optional dictionary to store tag data in. The default of
-        None will create a dictionary internally.
+        None will create a dictionary internaly. Set this to your own dictionary
+        if you want to retrieve information from the Tag Classes.
 
 
         """
@@ -1377,6 +1378,18 @@ def _run_unittests():
     import unittest
 
     class TestPostmarkup(unittest.TestCase):
+
+        def testcleanuphtml(self):
+
+            postmarkup = create()
+
+            tests = [("""\n<p>\n </p>\n""", ""),
+                     ("""<b>\n\n<i>   </i>\n</b>Test""", "Test"),
+                     ("""<p id="test">Test</p>""", """<p id="test">Test</p>"""),]
+
+            for test, result in tests:
+                self.assertEqual(PostMarkup.cleanup_html(test).strip(), result)
+
 
         def testsimpletag(self):
 
