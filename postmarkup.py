@@ -928,6 +928,24 @@ class PostMarkup(object):
         new_markup = u"".join(parts)
         return new_markup
 
+    # Matches simple blank tags containing only whitespace
+    _re_blank_tags = re.compile(r"\<(\w+?)\>\s*\</\1\>")
+
+    @classmethod
+    def cleanup_html(cls, html):
+        """Cleans up html. Currently only removes blank tags, i.e. tags containing only
+        whitespace. Only applies to tags without attributes."""
+
+        MAX_PASSES = 5 # To avoid a potentialy unbounded loop
+        passes = MAX_PASSES
+        while True:
+            cleaned_html = cls._re_blank_tags.sub(u"", html)
+            passes -= 1
+            if html == cleaned_html or passes <= 0:
+                break
+            html = cleaned_html
+        return html
+
 
     def render_to_html(self,
                        post_markup,
@@ -935,6 +953,7 @@ class PostMarkup(object):
                        exclude_tags=None,
                        auto_urls=True,
                        paragraphs=False,
+                       clean=True,
                        tag_data=None):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
@@ -947,6 +966,7 @@ class PostMarkup(object):
         auto_urls -- If True, then urls will be wrapped with url bbcode tags.
         paragraphs -- If True then line breaks will be replaces with paragraph
         tags, rather than break tags.
+        clean -- If True, html will be run through a cleanup_html method.
         tag_data -- An optional dictionary to store tag data in. The default of
         None will create a dictionary internally.
 
@@ -1149,7 +1169,10 @@ class PostMarkup(object):
                 text.append(node_text)
             parser.render_node_index += 1
 
-        return u"".join(text)
+        html = u"".join(text)
+        if clean:
+            html = self.cleanup_html(html)
+        return html
 
     # A shortcut for render_to_html
     __call__ = render_to_html
@@ -1160,30 +1183,32 @@ def render_bbcode(bbcode,
                   encoding="ascii",
                   exclude_tags=None,
                   auto_urls=True,
-                  paragraphs=False):
+                  paragraphs=False,
+                  clean=True,
+                  tag_data=None):
 
-    """Renders a bbcode string in to XHTML. This is a shortcut if you don't
-    need to customize any tags.
+    """ Renders a bbcode string in to XHTML. This is a shortcut if you don't
+        need to customize any tags.
 
-    bbcode -- A string containing the bbcode
-    encoding -- If bbcode is not unicode, then then it will be encoded with
-    this encoding (defaults to 'ascii'). Ignore the encoding if you already have
-    a unicode string
-    exclude_tags -- A collection of tags to ignore in the bbcode, or None to
-    not ignore any tags
-    auto_urls -- If True, urls will be converted to [link] tags (default is True).
-    paragraphs -- If True, then line breaks will be converted to paragraph tags
-    rather than html breaks <br> (default is False).
+        post_markup -- String containing bbcode.
+        encoding -- Encoding of string, defaults to "ascii" if the string is not
+        already unicode.
+        exclude_tags -- A collection of tag names to ignore.
+        auto_urls -- If True, then urls will be wrapped with url bbcode tags.
+        paragraphs -- If True then line breaks will be replaces with paragraph
+        tags, rather than break tags.
+        clean -- If True, html will be run through a cleanup_html method.
+        tag_data -- An optional dictionary to store tag data in. The default of
+        None will create a dictionary internally.
 
     """
     return _postmarkup(bbcode,
                        encoding,
                        exclude_tags=exclude_tags,
                        auto_urls=auto_urls,
-                       paragraphs=paragraphs)
-
-
-
+                       paragraphs=paragraphs,
+                       clean=clean,
+                       tag_data=tag_data)
 
 
 
@@ -1313,11 +1338,11 @@ asdasdasdasdqweqwe
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
-    for test in tests:
-        print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
-        print u"<p>%s</p>"%str(post_markup(test).encode("ascii", "xmlcharrefreplace"))
-        print u"<hr/>"
-        print
+    #for test in tests:
+    #    print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
+    #    print u"<p>%s</p>"%str(post_markup(test).encode("ascii", "xmlcharrefreplace"))
+    #    print u"<hr/>"
+    #    print
 
     #print repr(post_markup('[url=<script>Attack</script>]Attack[/url]'))
 
@@ -1331,7 +1356,7 @@ asdasdasdasdqweqwe
     smarkup = create()
     smarkup.add_tag(SectionTag, 'section')
 
-    test = """Hello, World.
+    test = """[b]Hello, World.
     [section sidebar]This is the [b]sidebar[/b][/section]
     [section footer]
     This is the footer
@@ -1340,7 +1365,8 @@ asdasdasdasdqweqwe
     """
 
     tag_data = {}
-    print smarkup(test, tag_data=tag_data)
+    print smarkup(test, tag_data=tag_data, paragraphs=True, clean=False)
+    print smarkup(test, tag_data=tag_data, paragraphs=True, clean=True)
     print tag_data
 
 def _run_unittests():
