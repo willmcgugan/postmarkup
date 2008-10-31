@@ -936,7 +936,7 @@ class PostMarkup(object):
         """Cleans up html. Currently only removes blank tags, i.e. tags containing only
         whitespace. Only applies to tags without attributes."""
 
-        MAX_PASSES = 5 # To avoid a potentialy unbounded loop
+        MAX_PASSES = 10 # To avoid a potentialy unbounded loop
         passes = MAX_PASSES
         while True:
             cleaned_html = cls._re_blank_tags.sub(u"", html)
@@ -1356,7 +1356,7 @@ asdasdasdasdqweqwe
     smarkup = create()
     smarkup.add_tag(SectionTag, 'section')
 
-    test = """Hello, World.
+    test = """Hello, World.[b][i]
 [section sidebar]This is the [b]sidebar[/b][/section]
 [section footer]
 This is the footer
