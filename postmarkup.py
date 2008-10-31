@@ -1359,7 +1359,7 @@ asdasdasdasdqweqwe
     smarkup = create()
     smarkup.add_tag(SectionTag, 'section')
 
-    test = """Hello, World.[b][i]
+    test = """Hello, World.[b][i]This in italics
 [section sidebar]This is the [b]sidebar[/b][/section]
 [section footer]
 This is the footer
