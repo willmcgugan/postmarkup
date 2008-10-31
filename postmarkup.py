@@ -1357,12 +1357,11 @@ asdasdasdasdqweqwe
     smarkup.add_tag(SectionTag, 'section')
 
     test = """Hello, World.
-    [section sidebar]This is the [b]sidebar[/b][/section]
-    [section footer]
-    This is the footer
-    [/section]
-    More text
-    """
+[section sidebar]This is the [b]sidebar[/b][/section]
+[section footer]
+This is the footer
+[/section]
+More text"""
 
     print smarkup(test, paragraphs=True, clean=False)
     tag_data = {}
