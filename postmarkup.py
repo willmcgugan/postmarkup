@@ -36,12 +36,13 @@ _re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", r
 _re_html=re.compile('<.*?>|\&.*?\;', re.UNICODE)
 def textilize(s):
     """Remove markup from html"""
+    s = s.replace("<p>", " ")
     return _re_html.sub("", s)
 
 _re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL|re.UNICODE)
 _re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL|re.UNICODE)
 
-_re_break_groups = re.compile(r'\n+', re.DOTALL|re.UNICODE)
+_re_break_groups = re.compile(r'[\r|\n]+', re.DOTALL|re.UNICODE)
 
 def get_excerpt(post):
     """Returns an excerpt between ["] and [/"]
@@ -198,10 +199,26 @@ class SimpleTag(TagBase):
         TagBase.__init__(self, name, inline=True)
         self.html_name = html_name
 
+
     def render_open(self, parser, node_index):
+        tag_data = parser.tag_data
+        tag_key = "SimpleTag.%s_nest_level"%self.html_name
+        nest_level = tag_data[tag_key] = tag_data.setdefault(tag_key, 0) + 1
+
+        if nest_level > 1:
+            return u""
+
         return u"<%s>"%self.html_name
 
     def render_close(self, parser, node_index):
+
+        tag_data = parser.tag_data
+        tag_key = "SimpleTag.%s_nest_level"%self.html_name
+        tag_data[tag_key] -= 1
+
+        if tag_data[tag_key] > 0:
+            return u''
+
         return u"</%s>"%self.html_name
 
 
@@ -565,7 +582,7 @@ class ParagraphTag(TagBase):
 
         ret = []
         if level > 0:
-            ret.append(u'</p>')
+            ret.append(u'</p>\n')
             tag_data['ParagraphTag.level'] -= 1;
 
         ret.append(u'<p>')
@@ -602,7 +619,7 @@ class SectionTag(TagBase):
         self.skip_contents(parser)
 
         tag_data = parser.tag_data
-        sections = tag_data.setdefault('sections', {})
+        sections = tag_data['output'].setdefault('sections', {})
 
         sections.setdefault(self.section_name, []).append(contents)
 
@@ -986,6 +1003,7 @@ class PostMarkup(object):
             post_markup = self.insert_paragraphs(post_markup)
 
         parser = _Parser(self, tag_data=tag_data)
+        parser.tag_data.setdefault("output", {})
         parser.markup = post_markup
 
         if exclude_tags is None:
