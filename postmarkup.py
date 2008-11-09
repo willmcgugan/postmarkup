@@ -403,7 +403,7 @@ class PygmentsCodeTag(TagBase):
             return '<div class="code"><pre>%s</pre></div>' % contents
 
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
-        return highlight(contents, lexer, formatter)
+        return highlight(contents, lexer, formatter).strip().replace("\n", "<br/>")
 
 
 
@@ -416,7 +416,7 @@ class CodeTag(TagBase):
 
         contents = _escape_no_breaks(self.get_contents(parser))
         self.skip_contents(parser)
-        return '<div class="code"><pre>%s</pre></div>' % contents
+        return '<div class="code"><pre>%s</pre></div>' % contents.replace("\n", "<br/>")
 
 
 class ImgTag(TagBase):
@@ -609,7 +609,7 @@ class SectionTag(TagBase):
     """
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, enclosed=True)
+        TagBase.__init__(self, name, enclosed=True, strip_first_newline=True)
 
     def render_open(self, parser, node_index):
 
@@ -963,6 +963,7 @@ class PostMarkup(object):
         while original_html != html:
             original_html = html
             html = cls._re_blank_tags.sub(u"", html)
+        html = _re_break_groups.sub(u"\n", html)
         return html
 
 
@@ -999,6 +1000,7 @@ class PostMarkup(object):
         if auto_urls:
             post_markup = self.tagify_urls(post_markup)
 
+        post_markup = post_markup.replace('\r\n', '\n')
         if paragraphs:
             post_markup = self.insert_paragraphs(post_markup)
 
@@ -1049,7 +1051,16 @@ class PostMarkup(object):
 
         def open_tag(tag):
             def call(node_index):
-                return tag.render_open(parser, node_index)
+                if paragraphs and not isinstance(tag, ParagraphTag):
+                    if not tag.inline:
+                        tag_data = parser.tag_data
+                        level = tag_data.get('ParagraphTag.level', 0)
+                        if level:
+                            tag_data['ParagraphTag.level'] = 0
+                            return "</p>"+tag.render_open(parser, node_index)
+                    return tag.render_open(parser, node_index)
+                else:
+                    return tag.render_open(parser, node_index)
             nodes.append(call)
 
         def close_tag(tag):
@@ -1268,6 +1279,7 @@ class TagStringify(object):
         self.callback = callback
         self.raw = raw
         r[b]=3
+
     def __str__(self):
         return self.callback()
     def __repr__(self):
@@ -1359,9 +1371,10 @@ asdasdasdasdqweqwe
 
     #tests=["""[b]b[i]i[/b][/i]"""]
 
+
     for test in tests:
         print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
-        print u"<p>%s</p>"%str(post_markup(test).encode("ascii", "xmlcharrefreplace"))
+        print u"<p>%s</p>"%str(post_markup(test, paragraphs=True).encode("ascii", "xmlcharrefreplace"))
         print u"<hr/>"
         print
 
