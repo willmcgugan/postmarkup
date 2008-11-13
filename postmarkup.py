@@ -5,7 +5,7 @@ Post Markup
 Author: Will McGugan (http://www.willmcgugan.com)
 """
 
-__version__ = "1.1.4"
+__version__ = "1.1.5dev"
 
 import re
 from urllib import quote, unquote, quote_plus, urlencode
@@ -1057,7 +1057,7 @@ class PostMarkup(object):
                         level = tag_data.get('ParagraphTag.level', 0)
                         if level:
                             tag_data['ParagraphTag.level'] = 0
-                            return "</p>"+tag.render_open(parser, node_index)
+                            return "</p>"+(tag.render_open(parser, node_index) or "")
                     return tag.render_open(parser, node_index)
                 else:
                     return tag.render_open(parser, node_index)
@@ -1099,7 +1099,10 @@ class PostMarkup(object):
                 if not enclosed_count:
                     redo_break_stack()
 
-                nodes.append(self.standard_replace(tag_token))
+                if paragraphs:
+                    nodes.append(self.standard_replace_no_break(tag_token))
+                else:
+                    nodes.append(self.standard_replace(tag_token))
                 continue
 
             elif tag_type == TOKEN_TAG:
@@ -1370,7 +1373,6 @@ asdasdasdasdqweqwe
     tests.append("http://www.google.com/search?as_q=bbcode&btnG=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA")
 
     #tests=["""[b]b[i]i[/b][/i]"""]
-
 
     for test in tests:
         print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
