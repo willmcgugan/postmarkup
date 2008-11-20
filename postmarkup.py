@@ -573,7 +573,7 @@ class CenterTag(TagBase):
 class ParagraphTag(TagBase):
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name)
+        TagBase.__init__(self, name, inline=True)
 
     def render_open(self, parser, node_index, **kwargs):
 
