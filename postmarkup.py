@@ -545,8 +545,12 @@ class ColorTag(TagBase):
     def render_open(self, parser, node_index):
 
         valid_chars = self.valid_chars
-        color = self.params.split()[0:1][0].lower()
-        self.color = "".join([c for c in color if c in valid_chars])
+        print repr(self.params)
+        try:
+            color = self.params.split()[0].lower()
+            self.color = "".join([c for c in color if c in valid_chars])
+        except IndexError:
+            self.color = None
 
         if not self.color:
             return u""
@@ -651,6 +655,7 @@ class MultiReplace:
 
 def _escape(s):
     return PostMarkup.standard_replace(s.rstrip('\n'))
+escape = _escape
 
 def _escape_no_breaks(s):
     return PostMarkup.standard_replace_no_break(s.rstrip('\n'))
