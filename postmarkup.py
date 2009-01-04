@@ -393,11 +393,11 @@ class PygmentsCodeTag(TagBase):
 
     def render_open(self, parser, node_index):
 
-        contents = self.get_contents(parser)
+        contents = self.get_contents(parser).strip('\n')
         self.skip_contents(parser)
 
         try:
-            lexer = get_lexer_by_name(self.params, stripall=True)
+            lexer = get_lexer_by_name(self.params)
         except ClassNotFound:
             contents = _escape(contents)
             return '<div class="code"><pre>%s</pre></div>' % contents
