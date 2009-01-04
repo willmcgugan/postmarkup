@@ -402,8 +402,10 @@ class PygmentsCodeTag(TagBase):
             contents = _escape(contents)
             return '<div class="code"><pre>%s</pre></div>' % contents
 
+
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
-        return highlight(contents, lexer, formatter).strip().replace("\n", "<br/>")
+        hcontents = highlight(contents, lexer, formatter)
+        return hcontents
 
 
 
@@ -1083,8 +1085,8 @@ class PostMarkup(object):
 
             if tag_type == TOKEN_TEXT:
                 if parser.no_breaks_count:
-                    tag_token = tag_token.strip()
-                    if not tag_token:
+                    tag_token = tag_token.rstrip()
+                    if not tag_token.strip():
                         continue
                 if remove_next_newline:
                     tag_token = tag_token.lstrip(' ')
@@ -1318,6 +1320,7 @@ New lines characters are converted to breaks."""\
 
     tests.append(long_test)
 
+
     tests.append("[dict]Will[/dict]")
 
     tests.append("[code unknownlanguage]10 print 'In yr code'; 20 goto 10[/code]")
@@ -1378,6 +1381,9 @@ asdasdasdasdqweqwe
     tests.append("http://www.google.com/search?as_q=bbcode&btnG=%D0%9F%D0%BE%D0%B8%D1%81%D0%BA")
 
     #tests=["""[b]b[i]i[/b][/i]"""]
+
+    tests = []
+    tests.append("[code python]    import this[/code]")
 
     for test in tests:
         print u"<pre>%s</pre>"%str(test.encode("ascii", "xmlcharrefreplace"))
