@@ -547,7 +547,6 @@ class ColorTag(TagBase):
     def render_open(self, parser, node_index):
 
         valid_chars = self.valid_chars
-        print repr(self.params)
         try:
             color = self.params.split()[0].lower()
             self.color = "".join([c for c in color if c in valid_chars])
@@ -665,6 +664,21 @@ def _escape_no_breaks(s):
 def _unescape(s):
     return PostMarkup.standard_unreplace(s)
 
+_re_dquotes = re.compile(r'''".*?"''')
+def _cosmetic_replace(s):
+
+    s = PostMarkup.cosmetic_replace(s)
+
+    def repl_quotes(match):
+        quoted_s = match.group(0)
+        quoted_s = "&#147;%s&#148;" % quoted_s[1:-1]
+        return quoted_s
+
+    s = _re_dquotes.sub(repl_quotes, s)
+
+    return s
+
+
 class TagFactory(object):
 
     def __init__(self):
@@ -762,6 +776,13 @@ class PostMarkup(object):
     standard_replace_no_break = MultiReplace({  u'<':u'&lt;',
                                                 u'>':u'&gt;',
                                                 u'&':u'&amp;',})
+
+    cosmetic_replace = MultiReplace({ u'--':u'&ndash;',
+                                      u'---':u'&mdash;',
+                                      u'...':u'&#8230;',
+                                      u'(c)':u'&copy;',
+                                      u'(tm)':u'&#153;'
+                                    })
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
@@ -981,7 +1002,8 @@ class PostMarkup(object):
                        auto_urls=True,
                        paragraphs=False,
                        clean=True,
-                       tag_data=None):
+                       tag_data=None,
+                       cosmetic_replace=True):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
         buy virtue that the state is entirely stored on the stack.
@@ -1031,6 +1053,20 @@ class PostMarkup(object):
         tag_stack = []
         break_stack = []
         remove_next_newline = False
+
+        def standard_replace(s):
+
+            s = self.standard_replace(s)
+            if cosmetic_replace:
+                s = _cosmetic_replace(s)
+            return  s
+
+        def standard_replace_no_break(s):
+
+            s = self.standard_replace_no_break(s)
+            if cosmetic_replace:
+                s = _cosmetic_replace(s)
+            return  s
 
         def check_tag_stack(tag_name):
 
@@ -1107,9 +1143,9 @@ class PostMarkup(object):
                     redo_break_stack()
 
                 if paragraphs:
-                    nodes.append(self.standard_replace_no_break(tag_token))
+                    nodes.append(standard_replace_no_break(tag_token))
                 else:
-                    nodes.append(self.standard_replace(tag_token))
+                    nodes.append(standard_replace(tag_token))
                 continue
 
             elif tag_type == TOKEN_TAG:
@@ -1521,4 +1557,8 @@ if __name__ == "__main__":
 
     _tests()
     _run_unittests()
+
+
+    #print _cosmetic_replace(''' "Hello, World!"... -- and --- more ''')
+
     #_ff_test()
