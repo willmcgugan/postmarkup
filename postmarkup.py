@@ -1002,8 +1002,8 @@ class PostMarkup(object):
                        auto_urls=True,
                        paragraphs=False,
                        clean=True,
-                       tag_data=None,
-                       cosmetic_replace=True):
+                       cosmetic_replace=True,
+                       tag_data=None):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
         buy virtue that the state is entirely stored on the stack.
@@ -1016,6 +1016,8 @@ class PostMarkup(object):
         paragraphs -- If True then line breaks will be replaced with paragraph
         tags, rather than break tags.
         clean -- If True, html will be run through the cleanup_html method.
+        cosmetic_replace -- If True, then some 'smart' quotes will be enabled,
+        in addition to replacing some character sequences with html entities.
         tag_data -- An optional dictionary to store tag data in. The default of
         None will create a dictionary internaly. Set this to your own dictionary
         if you want to retrieve information from the Tag Classes.
