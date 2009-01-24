@@ -665,16 +665,26 @@ def _unescape(s):
     return PostMarkup.standard_unreplace(s)
 
 _re_dquotes = re.compile(r'''".*?"''')
+_re_squotes = re.compile(r"\s'(.+?)'")
 def _cosmetic_replace(s):
 
     s = PostMarkup.cosmetic_replace(s)
 
-    def repl_quotes(match):
+    def repl_dquotes(match):
         quoted_s = match.group(0)
-        quoted_s = "&#147;%s&#148;" % quoted_s[1:-1]
+        quoted_s = "&ldquo;%s&rdquo;" % quoted_s[1:-1]
         return quoted_s
 
-    s = _re_dquotes.sub(repl_quotes, s)
+    s = _re_dquotes.sub(repl_dquotes, s)
+
+    def repl_squotes(match):
+        quoted_s = match.group(1)
+        print quoted_s
+        quoted_s = " &lsquo;%s&rsquo;" % quoted_s
+        return quoted_s
+
+
+    s = _re_squotes.sub(repl_squotes, s)
 
     return s
 
@@ -781,7 +791,8 @@ class PostMarkup(object):
                                       u'---':u'&mdash;',
                                       u'...':u'&#8230;',
                                       u'(c)':u'&copy;',
-                                      u'(tm)':u'&#153;'
+                                      u'(reg)':u'&reg;',
+                                      u'(tm)':u'&trade;'
                                     })
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
@@ -1561,6 +1572,6 @@ if __name__ == "__main__":
     _run_unittests()
 
 
-    #print _cosmetic_replace(''' "Hello, World!"... -- and --- more ''')
+    print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
     #_ff_test()
