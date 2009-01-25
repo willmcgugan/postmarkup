@@ -405,6 +405,8 @@ class PygmentsCodeTag(TagBase):
 
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
         hcontents = highlight(contents, lexer, formatter)
+        hcontents = hcontents.replace('\n', '<br>')
+
         return hcontents
 
 
@@ -679,7 +681,6 @@ def _cosmetic_replace(s):
 
     def repl_squotes(match):
         quoted_s = match.group(1)
-        print quoted_s
         quoted_s = " &lsquo;%s&rsquo;" % quoted_s
         return quoted_s
 
@@ -1568,10 +1569,19 @@ def _ff_test():
 
 if __name__ == "__main__":
 
-    _tests()
-    _run_unittests()
+    #_tests()
+    #_run_unittests()
 
 
-    print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
+    #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
+
+    t = """[code python]
+
+    import this
+
+    print "hello"
+
+    """
+    print render_bbcode(t)
 
     #_ff_test()
