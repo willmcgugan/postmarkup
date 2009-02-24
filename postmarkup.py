@@ -42,7 +42,7 @@ def textilize(s):
 _re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL|re.UNICODE)
 _re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL|re.UNICODE)
 
-_re_break_groups = re.compile(r'[\r|\n]+', re.DOTALL|re.UNICODE)
+_re_break_groups = re.compile(r'[\r\n]+', re.DOTALL|re.UNICODE)
 
 def get_excerpt(post):
     """Returns an excerpt between ["] and [/"]
@@ -1575,12 +1575,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """[code python]
-
-    import this
-
-    print "hello"
-
+    t = """a|b
     """
     print render_bbcode(t)
 
