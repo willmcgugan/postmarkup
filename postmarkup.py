@@ -243,7 +243,7 @@ class LinkTag(TagBase):
     _safe_chars = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                'abcdefghijklmnopqrstuvwxyz'
                '0123456789'
-               '_.-=/&?:%&')
+               '_.-=/&?:%&#')
 
     _re_domain = re.compile(r"//([a-z0-9-\.]*)", re.UNICODE)
 
@@ -1575,7 +1575,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """a|b
+    t = """http://www.willmcgugan.com#comment5
     """
     print render_bbcode(t)
 
