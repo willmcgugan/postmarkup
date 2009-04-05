@@ -405,7 +405,7 @@ class PygmentsCodeTag(TagBase):
 
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass="code")
         hcontents = highlight(contents, lexer, formatter)
-        hcontents = hcontents.replace('\n', '<br>')
+        hcontents = hcontents.strip().replace('\n', '<br>')
 
         return hcontents
 
