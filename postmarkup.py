@@ -33,7 +33,7 @@ def annotate_link(domain):
 _re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE|re.UNICODE)
 
 
-_re_html=re.compile('<.*?>|\&.*?\;', re.UNICODE)
+_re_html=re.compile('<.*?>|\&.*?\;', re.UNICODE|re.DOTALL)
 def textilize(s):
     """Remove markup from html"""
     s = s.replace("<p>", " ")
