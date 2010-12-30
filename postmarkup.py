@@ -57,7 +57,6 @@ def get_excerpt(post):
     return _re_remove_markup.sub("", excerpt)
 
 def strip_bbcode(bbcode):
-
     """Strips bbcode tags from a string.
 
     bbcode -- A string to remove tags from
@@ -433,9 +432,18 @@ class ImgTag(TagBase):
         contents = self.get_contents(parser)
         self.skip_contents(parser)
 
-        contents = strip_bbcode(contents).replace(u'"', "%22")
-
-        return u'<img src="%s"></img>' % contents
+        # Validate url to avoid any XSS attacks
+        url = strip_bbcode(contents).replace(u'"', "%22").strip()
+        if not url:
+            return u''
+        scheme, netloc, path, params, query, fragment = urlparse(url)
+        if not scheme:
+            url = 'http://' + url
+            scheme, netloc, path, params, query, fragment = urlparse(url)
+        if scheme.lower() not in ('http', 'https', 'ftp'):
+            return u''
+        
+        return u'<img src="%s"></img>' % url
 
 
 class ListTag(TagBase):
@@ -1575,7 +1583,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """http://www.willmcgugan.com#comment5
+    t = """[img]example.org/img.jpg
     """
     print render_bbcode(t)
 
