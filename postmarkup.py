@@ -66,71 +66,6 @@ def strip_bbcode(bbcode):
     return u"".join([t[1] for t in PostMarkup.tokenize(bbcode) if t[0] == PostMarkup.TOKEN_TEXT])
 
 
-def create(include=None, exclude=None, use_pygments=True, **kwargs):
-
-    """Create a postmarkup object that converts bbcode to XML snippets. Note
-    that creating postmarkup objects is _not_ threadsafe, but rendering the
-    html _is_ threadsafe. So typically you will need just one postmarkup instance
-    to render the bbcode accross threads.
-
-    include -- List or similar iterable containing the names of the tags to use
-               If omitted, all tags will be used
-    exclude -- List or similar iterable containing the names of the tags to exclude.
-               If omitted, no tags will be excluded
-    use_pygments -- If True, Pygments (http://pygments.org/) will be used for the code tag,
-                    otherwise it will use <pre>code</pre>
-    kwargs -- Remaining keyword arguments are passed to tag constructors.
-
-    """
-
-    postmarkup = PostMarkup()
-    postmarkup_add_tag = postmarkup.tag_factory.add_tag
-
-    def add_tag(tag_class, name, *args, **kwargs):
-        if include is None or name in include:
-            if exclude is not None and name in exclude:
-                return
-            postmarkup_add_tag(tag_class, name, *args, **kwargs)
-
-
-
-    add_tag(SimpleTag, 'b', 'strong')
-    add_tag(SimpleTag, 'i', 'em')
-    add_tag(SimpleTag, 'u', 'u')
-    add_tag(SimpleTag, 's', 'strike')
-
-    add_tag(LinkTag, 'link', **kwargs)
-    add_tag(LinkTag, 'url', **kwargs)
-
-    add_tag(QuoteTag, 'quote')
-
-    add_tag(SearchTag, u'wiki',
-            u"http://en.wikipedia.org/wiki/Special:Search?search=%s", u'wikipedia.com', **kwargs)
-    add_tag(SearchTag, u'google',
-            u"http://www.google.com/search?hl=en&q=%s&btnG=Google+Search", u'google.com', **kwargs)
-    add_tag(SearchTag, u'dictionary',
-            u"http://dictionary.reference.com/browse/%s", u'dictionary.com', **kwargs)
-    add_tag(SearchTag, u'dict',
-            u"http://dictionary.reference.com/browse/%s", u'dictionary.com', **kwargs)
-
-    add_tag(ImgTag, u'img')
-    add_tag(ListTag, u'list')
-    add_tag(ListItemTag, u'*')
-
-    add_tag(SizeTag, u"size")
-    add_tag(ColorTag, u"color")
-    add_tag(CenterTag, u"center")
-
-    if use_pygments:
-        assert pygments_available, "Install Pygments (http://pygments.org/) or call create with use_pygments=False"
-        add_tag(PygmentsCodeTag, u'code', **kwargs)
-    else:
-        add_tag(CodeTag, u'code', **kwargs)
-
-    add_tag(ParagraphTag, u"p")
-
-    return postmarkup
-
 class TagBase(object):
 
     def __init__(self, name, enclosed=False, auto_close=False, inline=False, strip_first_newline=False, **kwargs):
@@ -408,8 +343,6 @@ class PygmentsCodeTag(TagBase):
 
         return hcontents
 
-
-
 class CodeTag(TagBase):
 
     def __init__(self, name, **kwargs):
@@ -640,6 +573,83 @@ class SectionTag(TagBase):
 
         return u''
 
+class DefaultTag(TagBase):
+    def __init__(self, name, **kwargs):
+        TagBase.__init__(self, name, auto_close=True, inline=True, **kwargs)
+        
+    def render_open(self, parser, node_index):
+        return _escape(self.get_contents(parser)) 
+      
+      
+def create(include=None,
+           exclude=None,
+           use_pygments=True,
+           default_tag=DefaultTag,
+           **kwargs):
+
+    """Create a postmarkup object that converts bbcode to XML snippets. Note
+    that creating postmarkup objects is _not_ threadsafe, but rendering the
+    html _is_ threadsafe. So typically you will need just one postmarkup instance
+    to render the bbcode accross threads.
+
+    include -- List or similar iterable containing the names of the tags to use
+               If omitted, all tags will be used
+    exclude -- List or similar iterable containing the names of the tags to exclude.
+               If omitted, no tags will be excluded
+    use_pygments -- If True, Pygments (http://pygments.org/) will be used for the code tag,
+                    otherwise it will use <pre>code</pre>
+    default_tag -- A tag to use when there is no appropriate tag registered,    
+    kwargs -- Remaining keyword arguments are passed to tag constructors.
+
+    """
+
+    postmarkup = PostMarkup()
+    postmarkup_add_tag = postmarkup.tag_factory.add_tag
+    postmarkup.tag_factory.set_default_tag(default_tag)
+
+    def add_tag(tag_class, name, *args, **kwargs):
+        if include is None or name in include:
+            if exclude is not None and name in exclude:
+                return
+            postmarkup_add_tag(tag_class, name, *args, **kwargs)
+    
+    add_tag(SimpleTag, 'b', 'strong')
+    add_tag(SimpleTag, 'i', 'em')
+    add_tag(SimpleTag, 'u', 'u')
+    add_tag(SimpleTag, 's', 'strike')
+
+    add_tag(LinkTag, 'link', **kwargs)
+    add_tag(LinkTag, 'url', **kwargs)
+
+    add_tag(QuoteTag, 'quote')
+
+    add_tag(SearchTag, u'wiki',
+            u"http://en.wikipedia.org/wiki/Special:Search?search=%s", u'wikipedia.com', **kwargs)
+    add_tag(SearchTag, u'google',
+            u"http://www.google.com/search?hl=en&q=%s&btnG=Google+Search", u'google.com', **kwargs)
+    add_tag(SearchTag, u'dictionary',
+            u"http://dictionary.reference.com/browse/%s", u'dictionary.com', **kwargs)
+    add_tag(SearchTag, u'dict',
+            u"http://dictionary.reference.com/browse/%s", u'dictionary.com', **kwargs)
+
+    add_tag(ImgTag, u'img')
+    add_tag(ListTag, u'list')
+    add_tag(ListItemTag, u'*')
+
+    add_tag(SizeTag, u"size")
+    add_tag(ColorTag, u"color")
+    add_tag(CenterTag, u"center")
+
+    if use_pygments:
+        assert pygments_available, "Install Pygments (http://pygments.org/) or call create with use_pygments=False"
+        add_tag(PygmentsCodeTag, u'code', **kwargs)
+    else:
+        add_tag(CodeTag, u'code', **kwargs)
+
+    add_tag(ParagraphTag, u"p")
+
+    return postmarkup
+        
 
 # http://effbot.org/zone/python-replace.htm
 class MultiReplace:
@@ -701,8 +711,8 @@ def _cosmetic_replace(s):
 class TagFactory(object):
 
     def __init__(self):
-
         self.tags = {}
+        self.default_tag = None
 
     @classmethod
     def tag_factory_callable(cls, tag_class, name, *args, **kwargs):
@@ -714,24 +724,21 @@ class TagFactory(object):
 
         return make
 
-
     def add_tag(self, cls, name, *args, **kwargs):
-
         self.tags[name] = self.tag_factory_callable(cls, name, *args, **kwargs)
+        
+    def set_default_tag(self, cls):
+        self.default_tag = cls
 
     def __getitem__(self, name):
-
         return self.tags[name]()
 
     def __contains__(self, name):
-
         return name in self.tags
 
     def get(self, name, default=None):
-
         if name in self.tags:
             return self.tags[name]()
-
         return default
 
 
@@ -832,14 +839,14 @@ class PostMarkup(object):
 
             brace_pos = post_find(u'[', pos)
             if brace_pos == -1:
-                if pos<len(post):
+                if pos < len(post):
                     yield TOKEN_TEXT, post[pos:], pos, len(post)
                 return
             if brace_pos - pos > 0:
                 yield TOKEN_TEXT, post[pos:brace_pos], pos, brace_pos
 
             pos = brace_pos
-            end_pos = pos+1
+            end_pos = pos + 1
 
             open_tag_pos = post_find(u'[', end_pos)
             end_pos = find_first(post, end_pos, re_end_eq)
@@ -909,16 +916,12 @@ class PostMarkup(object):
 
 
     def __init__(self, tag_factory=None):
-
         self.tag_factory = tag_factory or TagFactory()
 
-
     def default_tags(self):
-
         """ Add some basic tags. """
 
         add_tag = self.tag_factory.add_tag
-
         add_tag(SimpleTag, u'b', u'strong')
         add_tag(SimpleTag, u'i', u'em')
         add_tag(SimpleTag, u'u', u'u')
@@ -926,14 +929,11 @@ class PostMarkup(object):
 
 
     def get_supported_tags(self):
-
         """ Returns a list of the supported tags. """
-
         return sorted(self.tag_factory.tags.keys())
 
 
     def insert_paragraphs(self, post_markup):
-
         """Inserts paragraph tags in place of newlines. A more complex task than
         it may seem -- Multiple newlines result in just one paragraph tag, and
         paragraph tags aren't inserted inside certain other tags (such as the
@@ -944,7 +944,7 @@ class PostMarkup(object):
         """
 
         parts = [u'[p]']
-        tag_factory = self.tag_factory
+        tag_factory = self.tag_factory        
         enclosed_count = 0
 
         TOKEN_TEXT = PostMarkup.TOKEN_TEXT
@@ -1006,7 +1006,6 @@ class PostMarkup(object):
         html -- A string containing (X)HTML
 
         """
-
         original_html = ''
         while original_html != html:
             original_html = html
@@ -1023,6 +1022,7 @@ class PostMarkup(object):
                        paragraphs=False,
                        clean=True,
                        cosmetic_replace=True,
+                       render_unknown_tags=True,                                            
                        tag_data=None):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
@@ -1064,7 +1064,6 @@ class PostMarkup(object):
 
         tag_factory = self.tag_factory
 
-
         nodes = []
         parser.nodes = nodes
 
@@ -1077,35 +1076,30 @@ class PostMarkup(object):
         remove_next_newline = False
 
         def standard_replace(s):
-
             s = self.standard_replace(s)
             if cosmetic_replace:
                 s = _cosmetic_replace(s)
             return  s
 
         def standard_replace_no_break(s):
-
             s = self.standard_replace_no_break(s)
             if cosmetic_replace:
                 s = _cosmetic_replace(s)
             return  s
 
         def check_tag_stack(tag_name):
-
             for tag in reversed(tag_stack):
                 if tag_name == tag.name:
                     return True
             return False
 
         def redo_break_stack():
-
             while break_stack:
                 tag = break_stack.pop()
                 open_tag(tag)
                 tag_stack.append(tag)
 
         def break_inline_tags():
-
             while tag_stack:
                 if tag_stack[-1].inline:
                     tag = tag_stack.pop()
@@ -1136,6 +1130,8 @@ class PostMarkup(object):
         TOKEN_TEXT = PostMarkup.TOKEN_TEXT
         TOKEN_TAG = PostMarkup.TOKEN_TAG
 
+        supported_tags = self.get_supported_tags()
+        
         # Pass 1
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
 
@@ -1204,6 +1200,8 @@ class PostMarkup(object):
             if not end_tag:
 
                 tag = tag_factory.get(tag_name, None)
+                if tag is None and tag_factory.default_tag is not None:
+                    tag = tag_factory.default_tag(tag_name)                
                 if tag is None:
                     continue
 
@@ -1212,7 +1210,7 @@ class PostMarkup(object):
                 if not tag.inline:
                     break_inline_tags()
 
-                tag.open(parser, tag_attribs, end_pos, len(nodes))
+                tag.open(parser, tag_attribs, start_pos, len(nodes))
                 if tag.enclosed:
                     enclosed_count += 1
                 tag_stack.append(tag)
@@ -1220,12 +1218,11 @@ class PostMarkup(object):
                 open_tag(tag)
 
                 if tag.auto_close:
-                    tag = tag_stack.pop()
-                    tag.close(self, start_pos, len(nodes)-1)
+                    tag = tag_stack.pop()                    
+                    tag.close(self, end_pos, len(nodes)-1)
                     close_tag(tag)
 
             else:
-
                 if break_stack and break_stack[-1].name == tag_name:
                     break_stack.pop()
                     tag.close(parser, start_pos, len(nodes))
@@ -1482,7 +1479,7 @@ def _run_unittests():
     class TestPostmarkup(unittest.TestCase):
 
         def testcleanuphtml(self):
-
+            """Test cleanup_html"""
             postmarkup = create()
 
             tests = [("""\n<p>\n </p>\n""", ""),
@@ -1494,7 +1491,7 @@ def _run_unittests():
 
 
         def testsimpletag(self):
-
+            "Test simple tags"
             postmarkup = create()
 
             tests= [ ('[b]Hello[/b]', "<strong>Hello</strong>"),
@@ -1508,7 +1505,7 @@ def _run_unittests():
 
 
         def testoverlap(self):
-
+            """Test overlapping tags produce correct output"""
             postmarkup = create()
 
             tests= [ ('[i][b]Hello[/i][/b]', "<em><strong>Hello</strong></em>"),
@@ -1519,7 +1516,7 @@ def _run_unittests():
                 self.assertEqual(postmarkup(test), result)
 
         def testlinks(self):
-
+            """Test links produce correct output"""
             postmarkup = create(annotate_links=False)
 
             tests= [ ('[link=http://www.willmcgugan.com]blog1[/link]', '<a href="http://www.willmcgugan.com">blog1</a>'),
@@ -1528,6 +1525,16 @@ def _run_unittests():
                      ('[link]http://www.willmcgugan.com[/link]', '<a href="http://www.willmcgugan.com">http://www.willmcgugan.com</a>')
                      ]
 
+            for test, result in tests:
+                self.assertEqual(postmarkup(test), result)
+        
+        def testunknowntags(self):
+            """Test unknown tags pass through correctly"""
+            postmarkup = create(annotate_links=False)
+            
+            tests = [ ('[REDACTED]', '[REDACTED]'),
+                      ('[REDACTED this]', '[REDACTED this]'),
+                      ('[REDACTED <b>]', '[REDACTED &lt;b&gt;]') ]
             for test, result in tests:
                 self.assertEqual(postmarkup(test), result)
 
@@ -1578,12 +1585,12 @@ def _ff_test():
 if __name__ == "__main__":
 
     #_tests()
-    #_run_unittests()
+    _run_unittests()
 
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """[img]example.org/img.jpg
+    t = """[b][i][REDACTED="afsaf"]tag[/b]
     """
     print render_bbcode(t)
 
