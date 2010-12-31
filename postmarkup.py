@@ -30,7 +30,7 @@ def annotate_link(domain):
     return u" [%s]"%_escape(domain)
 
 
-_re_url = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE|re.UNICODE)
+_re_url = re.compile(r"((https?):(//)+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE|re.UNICODE)
 
 
 _re_html=re.compile('<.*?>|\&.*?\;', re.UNICODE|re.DOTALL)
@@ -216,7 +216,10 @@ class LinkTag(TagBase):
             return u''
 
         try:
-            domain = self._re_domain.search(uri.lower()).group(1)
+            domain_match = self._re_domain.search(uri.lower())
+            if domain_match is None:
+                return u''
+            domain = domain_match.group(1)
         except IndexError:
             return u''
 
@@ -282,7 +285,6 @@ class QuoteTag(TagBase):
             return u'<blockquote><em>%s</em><br/>'%(PostMarkup.standard_replace(self.params))
         else:
             return u'<blockquote>'
-
 
     def render_close(self, parser, node_index):
         return u"</blockquote>"
@@ -502,7 +504,6 @@ class ColorTag(TagBase):
         return u'<span style="color:%s">' % self.color
 
     def render_close(self, parser, node_index):
-
         if not self.color:
             return u''
         return u'</span>'
@@ -1590,7 +1591,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """[b][i][REDACTED="afsaf"]tag[/b]
+    t = """http://example.org
     """
     print render_bbcode(t)
 
