@@ -118,7 +118,8 @@ class TagBase(object):
 
     def skip_contents(self, parser):
         """Skips the contents of a tag while rendering."""
-        parser.skip_to_node(self.close_node_index)
+        if self.close_node_index is not None:
+            parser.skip_to_node(self.close_node_index)
 
     def __str__(self):
         return '[%s]'%self.name
@@ -243,7 +244,7 @@ class LinkTag(TagBase):
             return u""
 
         if self.domain:
-            return u'<a href="%s">'%self.url
+            return u'<a href="%s">' % PostMarkup.standard_replace_no_break(self.url)
         else:
             return u""
 
@@ -304,9 +305,9 @@ class SearchTag(TagBase):
             search=self.params
         else:
             search=self.get_contents(parser)
-        link = u'<a href="%s">' % self.url
+        link = u'<a href="%s">' % PostMarkup.standard_replace_no_break(self.url)
         if u'%' in link:
-            return link%quote_plus(search.encode("UTF-8"))
+            return link % quote_plus(search.encode("UTF-8"))
         else:
             return link
 
@@ -378,7 +379,7 @@ class ImgTag(TagBase):
         if scheme.lower() not in ('http', 'https', 'ftp'):
             return u''
         
-        return u'<img src="%s"></img>' % url
+        return u'<img src="%s"></img>' % PostMarkup.standard_replace_no_break(url)
 
 
 class ListTag(TagBase):
@@ -1591,8 +1592,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """http://example.org
-    """
+    t = """[url=http://example.org?a=b&c=d]test[/url]"""
     print render_bbcode(t)
 
     #_ff_test()
