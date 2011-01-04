@@ -408,7 +408,6 @@ class ListTag(TagBase):
     def render_open(self, parser, node_index):
 
         self.close_tag = u""
-
         tag_data = parser.tag_data
         tag_data.setdefault("ListTag.count", 0)
 
@@ -416,7 +415,6 @@ class ListTag(TagBase):
             return u""
 
         tag_data["ListTag.count"] += 1
-
         tag_data["ListItemTag.initial_item"]=True
 
         if self.params == "1":
@@ -467,7 +465,6 @@ class SizeTag(TagBase):
         TagBase.__init__(self, name, inline=True)
 
     def render_open(self, parser, node_index):
-
         try:
             self.size = int( "".join([c for c in self.params if c in self.valid_chars]) )
         except ValueError:
@@ -481,10 +478,8 @@ class SizeTag(TagBase):
         return u'<span style="font-size:%spx">' % self.size
 
     def render_close(self, parser, node_index):
-
         if self.size is None:
             return u""
-
         return u'</span>'
 
     def validate_size(self, size):
@@ -525,7 +520,6 @@ class CenterTag(TagBase):
 
     def render_open(self, parser, node_index, **kwargs):
         return u'<div style="text-align:center;">'
-
 
     def render_close(self, parser, node_index):
         return u'</div>'
@@ -1193,6 +1187,8 @@ class PostMarkup(object):
                 tag_name, tag_attribs = tag_token.split(u'=', 1)
                 tag_attribs = tag_attribs.strip()[1:-1]
 
+            if tag_stack:
+                tag_stack[-1].strip_first_newline = False
             tag_name = tag_name.strip().lower()
 
             end_tag = False

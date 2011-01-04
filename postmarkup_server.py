@@ -9,7 +9,7 @@ class Root(object):
     index.exposed = True
 
     def getbbcode(self, bbcode=""):
-        html = postmarkup.render_bbcode(bbcode, paragraphs=True, clean=True)
+        html = postmarkup.render_bbcode(bbcode, clean=True)
         return html
     getbbcode.exposed = True
 
