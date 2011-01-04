@@ -89,11 +89,12 @@ class TagBase(object):
         self.open_node_index = None
         self.close_node_index = None
 
-    def open(self, parser, params, open_pos, node_index):
+    def open(self, parser, params, open_pos, node_index, tag_open_pos):
         """ Called when the open tag is initially encountered. """
-        self.params = params
+        self.params = params        
         self.open_pos = open_pos
         self.open_node_index = node_index
+        self.tag_open_pos = tag_open_pos
 
     def close(self, parser, close_pos, node_index):
         """ Called when the close tag is initially encountered. """
@@ -111,10 +112,13 @@ class TagBase(object):
     def get_contents(self, parser):
         """Returns the string between the open and close tag."""
         return parser.markup[self.open_pos:self.close_pos]
+    
+    def get_outer_contents(self, parser):
+        return parser.markup[self.tag_open_pos:self.close_pos]
 
     def get_contents_text(self, parser):
         """Returns the string between the the open and close tag, minus bbcode tags."""
-        return u"".join( parser.get_text_nodes(self.open_node_index, self.close_node_index) )
+        return u"".join(parser.get_text_nodes(self.open_node_index, self.close_node_index))
 
     def skip_contents(self, parser):
         """Skips the contents of a tag while rendering."""
@@ -205,9 +209,6 @@ class LinkTag(TagBase):
 
         self.domain = ""
 
-        if u"javascript:" in url.lower():
-            return ""
-
         if ':' not in url:
             url = 'http://' + url
 
@@ -275,11 +276,11 @@ class QuoteTag(TagBase):
     def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, strip_first_newline=True)
 
-    def open(self, parser, *args):
-        TagBase.open(self, parser, *args)
-
-    def close(self, parser, *args):
-        TagBase.close(self, parser, *args)
+#    def open(self, parser, *args):
+#        TagBase.open(self, parser, *args)
+#
+#    def close(self, parser, *args):
+#        TagBase.close(self, parser, *args)
 
     def render_open(self, parser, node_index):
         if self.params:
@@ -362,6 +363,11 @@ class ImgTag(TagBase):
 
     def __init__(self, name, **kwargs):
         TagBase.__init__(self, name, inline=True)
+        
+    def open(self, parser, params, *args):
+        if params.strip():
+            self.auto_close = True            
+        super(ImgTag, self).open(parser, params, *args)
 
     def render_open(self, parser, node_index):
 
@@ -369,7 +375,12 @@ class ImgTag(TagBase):
         self.skip_contents(parser)
 
         # Validate url to avoid any XSS attacks
-        url = strip_bbcode(contents).replace(u'"', "%22").strip()
+        if self.params:
+            url = self.params.strip()
+        else:
+            url = strip_bbcode(contents)
+            
+        url = url.replace(u'"', "%22").strip()
         if not url:
             return u''
         scheme, netloc, path, params, query, fragment = urlparse(url)
@@ -387,11 +398,11 @@ class ListTag(TagBase):
     def __init__(self, name,  **kwargs):
         TagBase.__init__(self, name, strip_first_newline=True)
 
-    def open(self, parser, params, open_pos, node_index):
-        TagBase.open(self, parser, params, open_pos, node_index)
-
-    def close(self, parser, close_pos, node_index):
-        TagBase.close(self, parser, close_pos, node_index)
+#    def open(self, parser, params, open_pos, node_index):
+#        TagBase.open(self, parser, params, open_pos, node_index)
+#
+#    def close(self, parser, close_pos, node_index):
+#        TagBase.close(self, parser, close_pos, node_index)
 
 
     def render_open(self, parser, node_index):
@@ -580,7 +591,7 @@ class DefaultTag(TagBase):
         TagBase.__init__(self, name, auto_close=True, inline=True, **kwargs)
         
     def render_open(self, parser, node_index):
-        return _escape(self.get_contents(parser)) 
+        return _escape(self.get_outer_contents(parser)) 
       
       
 def create(include=None,
@@ -713,8 +724,7 @@ def _cosmetic_replace(s):
 class TagFactory(object):
 
     def __init__(self):
-        self.tags = {}
-        self.default_tag = None
+        self.tags = {}        
 
     @classmethod
     def tag_factory_callable(cls, tag_class, name, *args, **kwargs):
@@ -723,7 +733,6 @@ class TagFactory(object):
         """
         def make():
             return tag_class(name, *args, **kwargs)
-
         return make
 
     def add_tag(self, cls, name, *args, **kwargs):
@@ -861,8 +870,8 @@ class PostMarkup(object):
                 end_pos = open_tag_pos
                 pos = end_pos
                 continue
-
-            if post[end_pos] == ']':
+            
+            if post[end_pos] == ']':                
                 yield TOKEN_TAG, post[pos:end_pos+1], pos, end_pos+1
                 pos = end_pos+1
                 continue
@@ -1024,7 +1033,7 @@ class PostMarkup(object):
                        paragraphs=False,
                        clean=True,
                        cosmetic_replace=True,
-                       render_unknown_tags=True,                                            
+                       render_unknown_tags=False,                                            
                        tag_data=None):
 
         """Converts post markup (ie. bbcode) to XHTML. This method is threadsafe,
@@ -1170,16 +1179,15 @@ class PostMarkup(object):
 
             elif tag_type == TOKEN_TAG:
                 tag_token = tag_token[1:-1].lstrip()
-                if ' ' in tag_token:
+                if '=' in tag_token:
+                    tag_name, tag_attribs = tag_token.split(u'=', 1)
+                    tag_attribs = tag_attribs.strip()
+                elif ' ' in tag_token:
                     tag_name, tag_attribs = tag_token.split(u' ', 1)
                     tag_attribs = tag_attribs.strip()
                 else:
-                    if '=' in tag_token:
-                        tag_name, tag_attribs = tag_token.split(u'=', 1)
-                        tag_attribs = tag_attribs.strip()
-                    else:
-                        tag_name = tag_token
-                        tag_attribs = u""
+                    tag_name = tag_token
+                    tag_attribs = u""                
             else:
                 tag_token = tag_token[1:-1].lstrip()
                 tag_name, tag_attribs = tag_token.split(u'=', 1)
@@ -1192,7 +1200,6 @@ class PostMarkup(object):
                 end_tag = True
                 tag_name = tag_name[1:]
 
-
             if enclosed_count and tag_stack[-1].name != tag_name:
                 continue
 
@@ -1202,8 +1209,8 @@ class PostMarkup(object):
             if not end_tag:
 
                 tag = tag_factory.get(tag_name, None)
-                if tag is None and tag_factory.default_tag is not None:
-                    tag = tag_factory.default_tag(tag_name)                
+                if tag is None and render_unknown_tags:                    
+                    tag = tag_factory.default_tag(tag_name)                                
                 if tag is None:
                     continue
 
@@ -1212,7 +1219,7 @@ class PostMarkup(object):
                 if not tag.inline:
                     break_inline_tags()
 
-                tag.open(parser, tag_attribs, start_pos, len(nodes))
+                tag.open(parser, tag_attribs, end_pos, len(nodes), start_pos)
                 if tag.enclosed:
                     enclosed_count += 1
                 tag_stack.append(tag)
@@ -1284,6 +1291,7 @@ def render_bbcode(bbcode,
                   auto_urls=True,
                   paragraphs=False,
                   clean=True,
+                  render_unknown_tags=False,
                   tag_data=None):
 
     """ Renders a bbcode string in to XHTML. This is a shortcut if you don't
@@ -1307,6 +1315,7 @@ def render_bbcode(bbcode,
                        auto_urls=auto_urls,
                        paragraphs=paragraphs,
                        clean=clean,
+                       render_unknown_tags=render_unknown_tags,
                        tag_data=tag_data)
 
 
@@ -1538,7 +1547,7 @@ def _run_unittests():
                       ('[REDACTED this]', '[REDACTED this]'),
                       ('[REDACTED <b>]', '[REDACTED &lt;b&gt;]') ]
             for test, result in tests:
-                self.assertEqual(postmarkup(test), result)
+                self.assertEqual(postmarkup(test, render_unknown_tags=True), result)
 
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPostmarkup)
@@ -1592,7 +1601,7 @@ if __name__ == "__main__":
 
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
-    t = """[url=http://example.org?a=b&c=d]test[/url]"""
-    print render_bbcode(t)
+    #t = """[redacted]"""
+    #print render_bbcode(t, render_unknown_tags=True)
 
     #_ff_test()

@@ -16,8 +16,9 @@ $(function(){
 	
 	$("#bbcode_textarea").keydown(function(){
 				
-		clearTimeout(bbcode_timeout);		
-		bbcode_timeout = setTimeout(get_bbcode, 250);
+		clearTimeout(bbcode_timeout);
+		//get_bbcode()	
+		bbcode_timeout = setTimeout(get_bbcode, 20);
 
 	});
 	
