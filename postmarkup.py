@@ -818,31 +818,33 @@ class PostMarkup(object):
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
-    _re_end_eq = re.compile(u"\]|\=", re.UNICODE)
-    _re_quote_end = re.compile(u'\"|\]', re.UNICODE)
+    _re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
+    _re_end_eq = re.compile(r"\]|\=", re.UNICODE)
+    _re_quote_end = re.compile(r'\"|\]', re.UNICODE)
 
     # I tried to use RE's. Really I did.
     @classmethod
     def tokenize(cls, post):
 
+        re_tag_on_line = cls._re_tag_on_line
         re_end_eq = cls._re_end_eq
-        re_quote_end = cls._re_quote_end
+        re_quote_end = cls._re_quote_end        
 
         text = True
         pos = 0
 
         def find_first(post, pos, re_ff):
-            try:
-                return re_ff.search(post, pos).start()
-            except AttributeError:
+            search = re_ff.search(post, pos)
+            if search is None:
                 return -1
+            return search.start()            
 
         TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
         post_find = post.find
-        while True:
-
-            brace_pos = post_find(u'[', pos)
+        while True:                        
+            brace_pos = find_first(post, pos, re_tag_on_line)            
+            #brace_pos = post_find(u'[', pos)
             if brace_pos == -1:
                 if pos < len(post):
                     yield TOKEN_TEXT, post[pos:], pos, len(post)
