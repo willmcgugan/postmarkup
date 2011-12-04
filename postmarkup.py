@@ -10,6 +10,7 @@ __version__ = "1.1.5dev"
 import re
 from urllib import quote, unquote, quote_plus, urlencode
 from urlparse import urlparse, urlunparse
+from collections import defaultdict
 
 pygments_available = True
 try:
@@ -909,9 +910,13 @@ class PostMarkup(object):
     def parse_tag_token(cls, s):        
         m = cls._re_tag_token.match(s.lstrip())
         if m is None:
-            return (s[1:-1], u'')
-        name, attribs = m.groups()
-        return (name.strip(), attribs.strip())
+            name, attribs = s[1:-1], u''
+        else:
+            name, attribs = m.groups()
+        if name.startswith('/'):
+            return name.strip()[1:].lower(), attribs.strip(), True
+        else:
+            return name.strip().lower(), attribs.strip(), False
 
     def add_tag(self, cls, name, *args, **kwargs):
         return self.tag_factory.add_tag(cls, name, *args, **kwargs)
@@ -930,17 +935,28 @@ class PostMarkup(object):
         enclosed = False
         tag_factory = self.tag_factory
         
-        for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):                    
+        enclosed_tags = defaultdict(int)
+        for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):                        
             if tag_type == TOKEN_TEXT:
                 if enclosed:
                     append(tag_token)
                 else:                
                     append(sub(repl, tag_token))                
             else:
-                tag_name, _tag_attribs = self.parse_tag_token(tag_token)
-                tag = tag_factory.get(tag_name)
-                if tag is not None:
-                    enclosed = tag.enclosed
+                tag_name, _tag_attribs, end_tag = self.parse_tag_token(tag_token)
+                
+                tag = tag_factory.get(tag_name)                
+                if tag is not None and tag.enclosed:
+                    if end_tag:                        
+                        if tag_name in enclosed_tags:
+                            enclosed_tags[tag_name] -= 1
+                            if enclosed_tags[tag_name] == 0:
+                                del enclosed_tags[tag_name]
+                            enclosed = bool(enclosed_tags)
+                    else:
+                        enclosed_tags[tag_name] += 1
+                        enclosed = True
+                        
                 append(tag_token)
 
         return u"".join(text_tokens)
@@ -1197,17 +1213,10 @@ class PostMarkup(object):
                     nodes.append(standard_replace(tag_token))
                 continue
 
-            else:
-                tag_name, tag_attribs = self.parse_tag_token(tag_token)
+            tag_name, tag_attribs, end_tag = self.parse_tag_token(tag_token)
             
             if tag_stack:
-                tag_stack[-1].strip_first_newline = False
-            tag_name = tag_name.strip().lower()
-
-            end_tag = False
-            if tag_name.startswith(u'/'):
-                end_tag = True
-                tag_name = tag_name[1:]
+                tag_stack[-1].strip_first_newline = False            
 
             if enclosed_count and tag_stack[-1].name != tag_name:
                 continue
@@ -1608,7 +1617,6 @@ if __name__ == "__main__":
     #_tests()
     _run_unittests()
 
-    print render_bbcode('[code]http://bla.com[/code]')
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
     #t = """[redacted]"""
