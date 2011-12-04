@@ -824,9 +824,10 @@ class PostMarkup(object):
     _re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
     _re_end_eq = re.compile(r"\]|\=", re.UNICODE)
     _re_quote_end = re.compile(r'\"|\]', re.UNICODE)
-    _re_tag_token = re.compile(r'^\[(.*?)[\s|=](.*?)\]$', re.UNICODE)
-
-    # I tried to use RE's. Really I did.
+    #_re_tag_token = re.compile(r'^\[(.*?)[\s|=](.*?)\]$', re.UNICODE)
+    _re_tag_token = re.compile(r'^\[(\S*?)[\s=]\"?(.*?)\"?\]$', re.UNICODE)
+    
+    
     @classmethod
     def tokenize(cls, post):
 
@@ -1196,13 +1197,9 @@ class PostMarkup(object):
                     nodes.append(standard_replace(tag_token))
                 continue
 
-            elif tag_type == TOKEN_TAG:
-                tag_name, tag_attribs = self.parse_tag_token(tag_token)              
             else:
-                tag_token = tag_token[1:-1].lstrip()
-                tag_name, tag_attribs = tag_token.split(u'=', 1)
-                tag_attribs = tag_attribs.strip()[1:-1]
-
+                tag_name, tag_attribs = self.parse_tag_token(tag_token)
+            
             if tag_stack:
                 tag_stack[-1].strip_first_newline = False
             tag_name = tag_name.strip().lower()
