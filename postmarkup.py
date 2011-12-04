@@ -824,6 +824,7 @@ class PostMarkup(object):
     _re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
     _re_end_eq = re.compile(r"\]|\=", re.UNICODE)
     _re_quote_end = re.compile(r'\"|\]', re.UNICODE)
+    _re_tag_token = re.compile(r'^\[(.*?)[\s|=](.*?)\]$', re.UNICODE)
 
     # I tried to use RE's. Really I did.
     @classmethod
@@ -903,10 +904,18 @@ class PostMarkup(object):
                 except IndexError:
                     return
 
+    @classmethod
+    def parse_tag_token(cls, s):        
+        m = cls._re_tag_token.match(s.lstrip())
+        if m is None:
+            return (s[1:-1], u'')
+        name, attribs = m.groups()
+        return (name.strip(), attribs.strip())
+
     def add_tag(self, cls, name, *args, **kwargs):
         return self.tag_factory.add_tag(cls, name, *args, **kwargs)
 
-    def tagify_urls(self, postmarkup ):
+    def tagify_urls(self, postmarkup):
 
         """ Surrounds urls with url bbcode tags. """
 
@@ -914,13 +923,24 @@ class PostMarkup(object):
             return u'[url]%s[/url]' % match.group(0)
 
         text_tokens = []
+        append = text_tokens.append
+        sub = _re_url.sub
         TOKEN_TEXT = PostMarkup.TOKEN_TEXT
-        for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):
-
+        enclosed = False
+        tag_factory = self.tag_factory
+        
+        for tag_type, tag_token, start_pos, end_pos in self.tokenize(postmarkup):                    
             if tag_type == TOKEN_TEXT:
-                text_tokens.append(_re_url.sub(repl, tag_token))
+                if enclosed:
+                    append(tag_token)
+                else:                
+                    append(sub(repl, tag_token))                
             else:
-                text_tokens.append(tag_token)
+                tag_name, _tag_attribs = self.parse_tag_token(tag_token)
+                tag = tag_factory.get(tag_name)
+                if tag is not None:
+                    enclosed = tag.enclosed
+                append(tag_token)
 
         return u"".join(text_tokens)
 
@@ -1177,16 +1197,7 @@ class PostMarkup(object):
                 continue
 
             elif tag_type == TOKEN_TAG:
-                tag_token = tag_token[1:-1].lstrip()
-                if '=' in tag_token:
-                    tag_name, tag_attribs = tag_token.split(u'=', 1)
-                    tag_attribs = tag_attribs.strip()
-                elif ' ' in tag_token:
-                    tag_name, tag_attribs = tag_token.split(u' ', 1)
-                    tag_attribs = tag_attribs.strip()
-                else:
-                    tag_name = tag_token
-                    tag_attribs = u""                
+                tag_name, tag_attribs = self.parse_tag_token(tag_token)              
             else:
                 tag_token = tag_token[1:-1].lstrip()
                 tag_name, tag_attribs = tag_token.split(u'=', 1)
@@ -1266,6 +1277,7 @@ class PostMarkup(object):
         parser.nodes = nodes
 
         text = []
+        text_append = text.append
         parser.render_node_index = 0
         while parser.render_node_index < len(parser.nodes):
             i = parser.render_node_index
@@ -1273,7 +1285,7 @@ class PostMarkup(object):
             if callable(node_text):
                 node_text = node_text(i)
             if node_text is not None:
-                text.append(node_text)
+                text_append(node_text)
             parser.render_node_index += 1
 
         html = u"".join(text)
@@ -1599,7 +1611,7 @@ if __name__ == "__main__":
     #_tests()
     _run_unittests()
 
-
+    print render_bbcode('[code]http://bla.com[/code]')
     #print _cosmetic_replace(''' "Hello, World!"... -- and --- more 'single quotes'! sdfsdf''')
 
     #t = """[redacted]"""
