@@ -9,7 +9,7 @@ from os.path import basename, dirname, join
 try:
     from fs.osfs import OSFS
 except ImportError:
-    print "Get PyFilesystem from http://code.google.com/p/pyfilesystem/"
+    print("Get PyFilesystem from http://code.google.com/p/pyfilesystem/")
     raise
 import mimetypes
 

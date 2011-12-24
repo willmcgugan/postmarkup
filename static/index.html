@@ -28,7 +28,7 @@
 			<textarea id="bbcode_textarea" style="width:99%;height:600px;">
 [center][size 32]Some sample bbcode[/size][/center]
 
-[color red]Postmarkup[/color] is easily customizable, existing tags can be disabled and new ones added.
+[color red]Postmarkup[/color] is easily customizable; existing tags can be disabled and new ones added.
 
 [list]
 [*] Thread-safe
@@ -40,10 +40,14 @@ e.g. [b]Bold [i]Bold and Italic[/b] Italic[/i]
 [*] Syntax Highlighting code tag.
 e.g. 
 [code python]
-class DefaultTag(TagBase):
+class DefaultTag(TagBase):	
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, auto_close=True, inline=True, **kwargs)
-        
+        TagBase.__init__(self,
+                         name,
+                         auto_close=True,
+                         inline=True,
+                         **kwargs)
+        				         
     def render_open(self, parser, node_index):
         return _escape(self.get_outer_contents(parser)) 
 [/code]
