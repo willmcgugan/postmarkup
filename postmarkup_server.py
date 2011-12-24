@@ -14,10 +14,10 @@ except ImportError:
 
 
 def application(environ, start_response):
-    fs = OSFS('./')
+    fs = OSFS('./static/')
     path = environ["PATH_INFO"]    
     if path in ("", "/"):        
-        path = "index.htm"
+        path = "index.html"
     if path == "/getbbcode":
         bbcode = unicode(environ["wsgi.input"].read(), 'utf-8')
         html = postmarkup.render_bbcode(bbcode, clean=True)
@@ -25,7 +25,7 @@ def application(environ, start_response):
         return [html]
     if not fs.isfile(path):
         start_response("404 NOT FOUND", [])
-        return ["Nobody here but us chickens"]
+        return ["Nobody here but us chickens: %s" % path]
     start_response("200 OK", [])    
     return [fs.getcontents(path)]
     
