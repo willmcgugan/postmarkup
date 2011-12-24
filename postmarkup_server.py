@@ -15,8 +15,7 @@ except ImportError:
 
 def application(environ, start_response):
     fs = OSFS(join(dirname(__file__), "static"))
-    path = environ["PATH_INFO"]  
-    print path  
+    path = environ["PATH_INFO"]      
     if path in ("", "/"):        
         path = "index.html"
     if path == "/getbbcode":
