@@ -5,7 +5,7 @@ You can find it on http://postmarkup.willmcgugan.com
 """
 
 import postmarkup
-import os
+from os.path import dirname, join
 try:
     from fs.osfs import OSFS
 except ImportError:
@@ -14,8 +14,9 @@ except ImportError:
 
 
 def application(environ, start_response):
-    fs = OSFS('./static/')
-    path = environ["PATH_INFO"]    
+    fs = OSFS(join(dirname(__file__), "static"))
+    path = environ["PATH_INFO"]  
+    print path  
     if path in ("", "/"):        
         path = "index.html"
     if path == "/getbbcode":
