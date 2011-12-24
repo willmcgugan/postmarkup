@@ -1283,42 +1283,8 @@ class PostMarkup(object):
     __call__ = render_to_html
 
 
-_postmarkup = create(use_pygments=pygments_available, annotate_links=False)
+_postmarkup = create(use_pygments=pygments_available, annotate_links=False, use_paragraphs=True)
 render_bbcode = _postmarkup.render_to_html
-
-#def render_bbcode(bbcode,
-#                  encoding="ascii",
-#                  exclude_tags=None,
-#                  auto_urls=True,
-#                  paragraphs=False,
-#                  clean=True,
-#                  render_unknown_tags=False,
-#                  tag_data=None):
-#
-#    """ Renders a bbcode string in to XHTML. This is a shortcut if you don't
-#        need to customize any tags.
-#
-#        post_markup -- String containing bbcode.
-#        encoding -- Encoding of string, defaults to "ascii" if the string is not
-#        already unicode.
-#        exclude_tags -- A collection of tag names to ignore.
-#        auto_urls -- If True, then urls will be wrapped with url bbcode tags.
-#        paragraphs -- If True then line breaks will be replaces with paragraph
-#        tags, rather than break tags.
-#        clean -- If True, html will be run through a cleanup_html method.
-#        tag_data -- An optional dictionary to store tag data in. The default of
-#        None will create a dictionary internally.
-#
-#    """
-#    return _postmarkup(bbcode,
-#                       encoding,
-#                       exclude_tags=exclude_tags,
-#                       auto_urls=auto_urls,
-#                       paragraphs=paragraphs,
-#                       clean=clean,
-#                       render_unknown_tags=render_unknown_tags,
-#                       tag_data=tag_data)
-#
 
 
 def _tests():
