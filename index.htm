@@ -1,5 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html>
 <html>
 
 	<head>				
@@ -35,29 +34,22 @@ Postmarkup is easily customizable, existing tags can be disabled and new ones ad
 [*] Handles overlapping tags
 e.g. [b]Bold [i]Bold and Italic[/b] Italic[/i]
 [*]Link annotation (can be disabled)
-e.g. [link http://www.becontrary.com]Best debating site on the net[/link]
+e.g. [link http://www.willmcgugan.com]Author's website[/link]
+[*] Cosmetic replace for various characters: 'single quote' "Speech quotes" -- --- ... (c) (reg) (tm)
 [*] Syntax Highlighting code tag.
 e.g. 
 [code python]
-class SimpleTag(TagBase):
-    
-    """A tag that can be rendered with a simple substitution. """
-    
-    def __init__(self, name, html_name):
-        """ html_name -- the html tag to substitute."""
-        TagBase.__init__(self, name, inline=True)
-        self.html_name = html_name
-            
+class DefaultTag(TagBase):
+    def __init__(self, name, **kwargs):
+        TagBase.__init__(self, name, auto_close=True, inline=True, **kwargs)
+        
     def render_open(self, parser, node_index):
-        return u"<%s>"%self.html_name
-    
-    def render_close(self, parser, node_index):
-        return u"</%s>"%self.html_name
-[/code][/list]
+        return _escape(self.get_outer_contents(parser)) 
+[/code]
+[/list]
 Postmarkup [i]should[/i] produce sensible markup with any input. Let me know if it doesn't.
 
-[img]http://www.willmcgugan.com/email.gif[/img]
-			</textarea>		
+[img]http://willmcgugan.com/media/uploads/images/thumbs/myemail_512x71.jpg[/img]</textarea>		
 		</form>
 	</div>
 	
