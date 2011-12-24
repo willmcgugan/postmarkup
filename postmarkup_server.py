@@ -21,8 +21,8 @@ def application(environ, start_response):
     if path == "/getbbcode":
         bbcode = unicode(environ["wsgi.input"].read(), 'utf-8')
         html = postmarkup.render_bbcode(bbcode, clean=True)
-        start_response("200 OK", [("content-type", " text/html; charset=utf-8")])
-        return [html]
+        start_response("200 OK", [("Content-type", "text/html; charset=utf-8")])
+        return [html.encode("utf-8")]
     mime_type, _encoding = mimetypes.guess_type(basename(path))
     if not fs.isfile(path):
         start_response("404 NOT FOUND", [])
