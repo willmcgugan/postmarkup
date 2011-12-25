@@ -30,7 +30,8 @@ extra = {}
 if sys.version_info >= (3,):
     extra["use_2to3"] = True
 
-setup( name='postmarkup',
+setup( install_requires=['distribute'],
+       name='postmarkup',
        version = VERSION,
        author = 'Will McGugan',
        author_email = 'will@willmcgugan.com',
