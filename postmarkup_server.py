@@ -4,7 +4,8 @@ You can find it on http://postmarkup.willmcgugan.com
 
 """
 
-import postmarkup
+from postmarkup import render_bbcode
+
 from os.path import basename, dirname, join
 try:
     from fs.osfs import OSFS
@@ -20,7 +21,7 @@ def application(environ, start_response):
         path = "index.html"
     if path == "/getbbcode":
         bbcode = unicode(environ["wsgi.input"].read(), 'utf-8')
-        html = postmarkup.render_bbcode(bbcode, clean=True)
+        html = render_bbcode(bbcode, clean=True, paragraphs=True)
         start_response("200 OK", [("Content-type", "text/html; charset=utf-8")])
         return [html.encode("utf-8")]
     mime_type, _encoding = mimetypes.guess_type(basename(path))
