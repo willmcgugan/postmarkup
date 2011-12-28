@@ -1057,8 +1057,6 @@ class PostMarkup(object):
         # Pass 1
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
             
-            print repr(tag_token)
-
             if tag_type == TOKEN_TEXT:
                 if parser.no_breaks_count:
                     tag_token = tag_token.rstrip()
