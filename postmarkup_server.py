@@ -21,7 +21,7 @@ def application(environ, start_response):
         path = "index.html"
     if path == "/getbbcode":
         bbcode = unicode(environ["wsgi.input"].read(), 'utf-8')
-        html = render_bbcode(bbcode, clean=True, paragraphs=True)
+        html = render_bbcode(bbcode, clean=True, paragraphs=True, render_unknown_tags=True)
         start_response("200 OK", [("Content-type", "text/html; charset=utf-8")])
         return [html.encode("utf-8")]
     mime_type, _encoding = mimetypes.guess_type(basename(path))
