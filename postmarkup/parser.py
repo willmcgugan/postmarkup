@@ -24,8 +24,7 @@ __all__ = ["annotate_link",
            "ListItemTag",
            "SizeTag",
            "ColorTag",
-           "CenterTag",
-           "ParagraphTag",
+           "CenterTag",           
            "SectionTag",
            "DefaultTag",
            "create",
@@ -63,7 +62,7 @@ _re_url = re.compile(r"((https?):(//)+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILI
 _re_html=re.compile(r'<.*?>|\&.*?\;', re.UNICODE|re.DOTALL)
 _re_excerpt = re.compile(r'\[".*?\]+?.*?\[/".*?\]+?', re.DOTALL|re.UNICODE)
 _re_remove_markup = re.compile(r'\[.*?\]', re.DOTALL|re.UNICODE)
-_re_break_groups = re.compile(r'[\r\n]+', re.DOTALL|re.UNICODE)
+_re_break_groups = re.compile('[\n]{2,}', re.DOTALL|re.UNICODE)
 
 
 def textilize(s):
@@ -91,7 +90,8 @@ def strip_bbcode(bbcode):
 
     """
 
-    return u"".join([t[1] for t in PostMarkup.tokenize(bbcode) if t[0] == PostMarkup.TOKEN_TEXT])
+    TOKEN_TEXT = PostMarkup.TOKEN_TEXT
+    return u"".join([t[1] for t in PostMarkup.tokenize(bbcode) if t[0] == TOKEN_TEXT])
 
 
 class TagBase(object):
@@ -153,6 +153,9 @@ class TagBase(object):
             parser.skip_to_node(self.close_node_index)
 
     def __str__(self):
+        return '[%s]' % self.name
+
+    def __unicode__(self):
         return u'[%s]' % self.name
 
 
@@ -167,7 +170,7 @@ class SimpleTag(TagBase):
 
     def render_open(self, parser, node_index):
         tag_data = parser.tag_data
-        tag_key = u"SimpleTag.%s_nest_level"%self.html_name
+        tag_key = u"SimpleTag.%s_nest_level" % self.html_name
         nest_level = tag_data[tag_key] = tag_data.setdefault(tag_key, 0) + 1
 
         if nest_level > 1:
@@ -178,7 +181,7 @@ class SimpleTag(TagBase):
     def render_close(self, parser, node_index):
 
         tag_data = parser.tag_data
-        tag_key = "SimpleTag.%s_nest_level"%self.html_name
+        tag_key = u"SimpleTag.%s_nest_level"%self.html_name
         tag_data[tag_key] -= 1
 
         if tag_data[tag_key] > 0:
@@ -210,9 +213,7 @@ class LinkTag(TagBase):
 
     def __init__(self, name, annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
-
         self.annotate_links = annotate_links
-
 
     def render_open(self, parser, node_index):
 
@@ -311,7 +312,7 @@ class QuoteTag(TagBase):
 
 class SearchTag(TagBase):
 
-    def __init__(self, name, url, label="", annotate_links=True, **kwargs):
+    def __init__(self, name, url, label=u"", annotate_links=True, **kwargs):
         TagBase.__init__(self, name, inline=True)
         self.url = url
         self.label = label
@@ -358,7 +359,7 @@ class PygmentsCodeTag(TagBase):
         
         formatter = HtmlFormatter(linenos=self.line_numbers, cssclass=u"code")
         hcontents = highlight(contents, lexer, formatter)
-        hcontents = hcontents.strip().replace(u'\n', u'<br>')
+        hcontents = hcontents.strip()
 
         return hcontents
 
@@ -371,7 +372,7 @@ class CodeTag(TagBase):
     def render_open(self, parser, node_index):
         contents = _escape_no_breaks(self.get_contents(parser))
         self.skip_contents(parser)
-        return u'<div class="code"><pre>%s</pre></div>' % contents.replace(u"\n", u"<br/>")
+        return u'<div class="code"><pre>%s</pre></div>' % contents
 
 
 class ImgTag(TagBase):
@@ -449,8 +450,7 @@ class ListTag(TagBase):
 class ListItemTag(TagBase):
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name)
-        self.closed = False
+        TagBase.__init__(self, name, auto_close=True)        
 
     def render_open(self, parser, node_index):
 
@@ -528,43 +528,15 @@ class ColorTag(TagBase):
 
 class CenterTag(TagBase):
 
+    def __init__(self, name, **kwargs):
+        TagBase.__init__(self, name, inline=False)
+
     def render_open(self, parser, node_index, **kwargs):
         return u'<div style="text-align:center;">'
 
     def render_close(self, parser, node_index):
         return u'</div>'
 
-
-class ParagraphTag(TagBase):
-
-    def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, inline=True)
-
-    def render_open(self, parser, node_index, **kwargs):
-
-        tag_data = parser.tag_data
-        level = tag_data.setdefault(u'ParagraphTag.level', 0)
-
-        ret = []
-        if level > 0:
-            ret.append(u'</p>\n')
-            tag_data[u'ParagraphTag.level'] -= 1;
-
-        ret.append(u'<p>')
-        tag_data[u'ParagraphTag.level'] += 1;
-        return u''.join(ret)
-
-    def render_close(self, parser, node_index):
-
-        tag_data = parser.tag_data
-        level = tag_data.setdefault(u'ParagraphTag.level', 0)
-
-        if not level:
-            return u''
-
-        tag_data['ParagraphTag.level'] -= 1;
-
-        return u'</p>'
 
 class SectionTag(TagBase):
 
@@ -661,9 +633,7 @@ def create(include=None,
         assert pygments_available, "Install Pygments (http://pygments.org/) or call create with use_pygments=False"
         add_tag(PygmentsCodeTag, u'code', **kwargs)
     else:
-        add_tag(CodeTag, u'code', **kwargs)
-
-    add_tag(ParagraphTag, u"p")
+        add_tag(CodeTag, u'code', **kwargs)    
 
     return postmarkup
         
@@ -893,7 +863,7 @@ class PostMarkup(object):
             name, attribs = s[1:-1], u''
         else:
             name, attribs = m.groups()
-        if name.startswith('/'):
+        if name.startswith(u'/'):
             return name.strip()[1:].lower(), attribs.strip(), True
         else:
             return name.strip().lower(), attribs.strip(), False
@@ -954,67 +924,7 @@ class PostMarkup(object):
 
     def get_supported_tags(self):
         """ Returns a list of the supported tags. """
-        return sorted(self.tag_factory.tags.keys())
-
-    def insert_paragraphs(self, post_markup):
-        """Inserts paragraph tags in place of newlines. A more complex task than
-        it may seem -- Multiple newlines result in just one paragraph tag, and
-        paragraph tags aren't inserted inside certain other tags (such as the
-        code tag). Returns a postmarkup string.
-
-        post_markup -- A string containing the raw postmarkup
-
-        """
-
-        parts = [u'[p]']
-        tag_factory = self.tag_factory        
-        enclosed_count = 0
-
-        TOKEN_TEXT = PostMarkup.TOKEN_TEXT
-        TOKEN_TAG = PostMarkup.TOKEN_TAG
-
-        for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
-
-            if tag_type == TOKEN_TEXT:
-                if enclosed_count:
-                    parts.append(post_markup[start_pos:end_pos])
-                else:
-                    txt = post_markup[start_pos:end_pos]
-                    txt = _re_break_groups.sub(u'[p]', txt)
-                    parts.append(txt)
-                continue
-
-            elif tag_type == TOKEN_TAG:
-                tag_token = tag_token[1:-1].lstrip()
-                if u' ' in tag_token:
-                    tag_name = tag_token.split(u' ', 1)[0]
-                else:
-                    if '=' in tag_token:
-                        tag_name = tag_token.split(u'=', 1)[0]
-                    else:
-                        tag_name = tag_token
-            else:
-                tag_token = tag_token[1:-1].lstrip()
-                tag_name = tag_token.split(u'=', 1)[0]
-
-            tag_name = tag_name.strip().lower()
-
-            end_tag = False
-            if tag_name.startswith(u'/'):
-                end_tag = True
-                tag_name = tag_name[1:]
-
-            tag = tag_factory.get(tag_name, None)
-            if tag is not None and tag.enclosed:
-                if end_tag:
-                    enclosed_count -= 1
-                else:
-                    enclosed_count += 1
-
-            parts.append(post_markup[start_pos:end_pos])
-
-        new_markup = u"".join(parts)
-        return new_markup
+        return sorted(self.tag_factory.tags.keys())                
 
     # Matches simple blank tags containing only whitespace
     _re_blank_tags = re.compile(r"\<(\w+?)\>\s*\</\1\>")
@@ -1075,7 +985,7 @@ class PostMarkup(object):
 
         post_markup = post_markup.replace(u'\r\n', u'\n')
         if paragraphs:
-            post_markup = self.insert_paragraphs(post_markup)
+            post_markup = _re_break_groups.sub(u'\n\n', post_markup)      
 
         parser = _Parser(self, tag_data=tag_data)
         parser.tag_data.setdefault(u"output", {})
@@ -1131,16 +1041,7 @@ class PostMarkup(object):
 
         def open_tag(tag):
             def call(node_index):
-                if paragraphs and not isinstance(tag, ParagraphTag):
-                    if not tag.inline:
-                        tag_data = parser.tag_data
-                        level = tag_data.get(u'ParagraphTag.level', 0)
-                        if level:
-                            tag_data[u'ParagraphTag.level'] = 0
-                            return u"</p>"+(tag.render_open(parser, node_index) or u"")
-                    return tag.render_open(parser, node_index)
-                else:
-                    return tag.render_open(parser, node_index)
+                return tag.render_open(parser, node_index)
             nodes.append(call)
 
         def close_tag(tag):
@@ -1149,7 +1050,9 @@ class PostMarkup(object):
             nodes.append(call)
 
         TOKEN_TEXT = PostMarkup.TOKEN_TEXT
-        TOKEN_TAG = PostMarkup.TOKEN_TAG
+                
+        if paragraphs:
+            nodes.append(u"<p>")
         
         # Pass 1
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
@@ -1176,11 +1079,16 @@ class PostMarkup(object):
 
                 if not enclosed_count:
                     redo_break_stack()
+                    
+                if paragraphs:                     
+                    if not tag_stack:
+                        while u'\n\n' in tag_token:
+                            text, tag_token = tag_token.split(u'\n\n', 1)
+                            if text.strip():                                                                                    
+                                nodes.append(standard_replace(text))                            
+                                nodes.append(u"</p><p>")
 
-                if paragraphs:
-                    nodes.append(standard_replace_no_break(tag_token))
-                else:
-                    nodes.append(standard_replace(tag_token))
+                nodes.append(standard_replace(tag_token))                
                 continue
 
             tag_name, tag_attribs, end_tag = self.parse_tag_token(tag_token)
@@ -1235,11 +1143,13 @@ class PostMarkup(object):
                         enclosed_count -= 1
 
                     close_tag(tag)
+                    if paragraphs and not tag.inline and not tag_stack:
+                        nodes.append(u"</p><p>")
 
                     if not tag.inline:
                         remove_next_newline = True
-
-        if tag_stack:
+        
+        if tag_stack:            
             redo_break_stack()
             while tag_stack:
                 tag = tag_stack.pop()
@@ -1247,6 +1157,9 @@ class PostMarkup(object):
                 if tag.enclosed:
                     enclosed_count -= 1
                 close_tag(tag)
+        
+        if paragraphs:
+            nodes.append('</p>')
 
         parser.phase = 2
         # Pass 2
@@ -1266,14 +1179,14 @@ class PostMarkup(object):
 
         html = u"".join(text)
         if clean:
-            html = self.cleanup_html(html)
+            html = self.cleanup_html(html)            
         return html
 
     # A shortcut for render_to_html
     __call__ = render_to_html
 
 
-_postmarkup = create(use_pygments=pygments_available, annotate_links=False, use_paragraphs=True)
+_postmarkup = create(use_pygments=pygments_available, annotate_links=False)
 render_bbcode = _postmarkup.render_to_html
 
 
