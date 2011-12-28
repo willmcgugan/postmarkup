@@ -1056,6 +1056,8 @@ class PostMarkup(object):
         
         # Pass 1
         for tag_type, tag_token, start_pos, end_pos in self.tokenize(post_markup):
+            
+            print repr(tag_token)
 
             if tag_type == TOKEN_TEXT:
                 if parser.no_breaks_count:
@@ -1086,7 +1088,7 @@ class PostMarkup(object):
                             text, tag_token = tag_token.split(u'\n\n', 1)
                             if text.strip():                                                                                    
                                 nodes.append(standard_replace(text))                            
-                                nodes.append(u"</p><p>")
+                            nodes.append(u"</p><p>")
 
                 nodes.append(standard_replace(tag_token))                
                 continue
@@ -1179,7 +1181,7 @@ class PostMarkup(object):
 
         html = u"".join(text)
         if clean:
-            html = self.cleanup_html(html)            
+            html = self.cleanup_html(html)        
         return html
 
     # A shortcut for render_to_html
