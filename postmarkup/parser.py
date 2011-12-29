@@ -1,11 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-"""
-PostMarkup
-Author: Will McGugan (http://www.willmcgugan.com)
-
-"""
-
 __all__ = ["annotate_link",
            "textilize",
            "get_excerpt",
@@ -164,7 +158,7 @@ class SimpleTag(TagBase):
 
     def __init__(self, name, html_name, **kwargs):
         """html_name -- the html tag to substitute."""
-        TagBase.__init__(self, name, inline=True)
+        super(SimpleTag, self).__init__(name, inline=True)
         self.html_name = html_name
 
 
@@ -194,7 +188,7 @@ class DivStyleTag(TagBase):
     """A simple tag that is replaces with a div and a style."""
 
     def __init__(self, name, style, value, **kwargs):
-        TagBase.__init__(self, name)
+        super(DivStyleTag, self).__init__(self, name)
         self.style = style
         self.value = value
 
@@ -212,7 +206,7 @@ class LinkTag(TagBase):
     _re_domain = re.compile(r"//([a-z0-9-\.]*)", re.UNICODE)
 
     def __init__(self, name, annotate_links=True, **kwargs):
-        TagBase.__init__(self, name, inline=True)
+        super(LinkTag, self).__init__(name, inline=True)
         self.annotate_links = annotate_links
 
     def render_open(self, parser, node_index):
@@ -298,7 +292,7 @@ class LinkTag(TagBase):
 class QuoteTag(TagBase):
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, strip_first_newline=True)
+        super(QuoteTag, self).__init__(name, strip_first_newline=True)
 
     def render_open(self, parser, node_index):
         if self.params:
@@ -313,7 +307,7 @@ class QuoteTag(TagBase):
 class SearchTag(TagBase):
 
     def __init__(self, name, url, label=u"", annotate_links=True, **kwargs):
-        TagBase.__init__(self, name, inline=True)
+        super(SearchTag, self).__init__(name, inline=True)
         self.url = url
         self.label = label
         self.annotate_links = annotate_links
@@ -344,7 +338,7 @@ class SearchTag(TagBase):
 class PygmentsCodeTag(TagBase):
 
     def __init__(self, name, pygments_line_numbers=False, **kwargs):
-        TagBase.__init__(self, name, enclosed=True, strip_first_newline=True)
+        super(PygmentsCodeTag, self).__init__(name, enclosed=True, strip_first_newline=True)
         self.line_numbers = pygments_line_numbers
 
     def render_open(self, parser, node_index):
@@ -367,7 +361,7 @@ class PygmentsCodeTag(TagBase):
 class CodeTag(TagBase):
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, enclosed=True, strip_first_newline=True)
+        super(CodeTag, self).__init__(name, enclosed=True, strip_first_newline=True)
 
     def render_open(self, parser, node_index):
         contents = _escape_no_breaks(self.get_contents(parser))
@@ -378,7 +372,7 @@ class CodeTag(TagBase):
 class ImgTag(TagBase):
 
     def __init__(self, name, **kwargs):
-        TagBase.__init__(self, name, inline=True)
+        super(ImgTag, self).__init__( name, inline=True)
         
     def open(self, parser, params, *args):
         if params.strip():
@@ -411,8 +405,9 @@ class ImgTag(TagBase):
 
 class ListTag(TagBase):
 
-    def __init__(self, name,  **kwargs):
-        TagBase.__init__(self, name, strip_first_newline=True)
+    def __init__(self, name,  **kwargs):        
+        super(ListTag, self).__init__(name, strip_first_newline=True)
+        self.ordered = False
 
     def render_open(self, parser, node_index):
 
@@ -426,7 +421,7 @@ class ListTag(TagBase):
         tag_data[u"ListTag.count"] += 1
         tag_data[u"ListItemTag.initial_item"]=True
 
-        if self.params == u"1":
+        if self.ordered or self.params == u"1":
             self.close_tag = u"</li></ol>"
             return u"<ol><li>"
         elif self.params == u"a":
@@ -445,6 +440,12 @@ class ListTag(TagBase):
         tag_data[u"ListTag.count"] -= 1
 
         return self.close_tag
+ 
+    
+class OrderedListTag(ListTag):
+    def __init__(self, name,  **kwargs):
+        super(OrderedListTag, self).__init__(name, strip_first_newline=True)
+        self.ordered = 1
 
 
 class ListItemTag(TagBase):
@@ -623,7 +624,10 @@ def create(include=None,
 
     add_tag(ImgTag, u'img')
     add_tag(ListTag, u'list')
+    add_tag(ListTag, u'ul')
+    add_tag(OrderedListTag, u'ol')
     add_tag(ListItemTag, u'*')
+    add_tag(ListItemTag, u'li')
 
     add_tag(SizeTag, u"size")
     add_tag(ColorTag, u"color")
