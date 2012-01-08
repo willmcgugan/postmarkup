@@ -779,10 +779,10 @@ class PostMarkup(object):
 
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
-    _re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
+    #_re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
+    _re_tag_on_line = re.compile(r'\[.*?\]')
     _re_end_eq = re.compile(r"\]|\=", re.UNICODE)
-    _re_quote_end = re.compile(r'\"|\]', re.UNICODE)
-    #_re_tag_token = re.compile(r'^\[(.*?)[\s|=](.*?)\]$', re.UNICODE)
+    _re_quote_end = re.compile(r'\"|\]', re.UNICODE)    
     _re_tag_token = re.compile(r'^\[(\S*?)[\s=]\"?(.*?)\"?\]$', re.UNICODE)
     
     
@@ -804,7 +804,7 @@ class PostMarkup(object):
 
         post_find = post.find
         while True:                        
-            brace_pos = find_first(post, pos, re_tag_on_line)            
+            brace_pos = find_first(post, pos, re_tag_on_line)                    
             if brace_pos == -1:
                 if pos < len(post):
                     yield TOKEN_TEXT, post[pos:], pos, len(post)
@@ -876,11 +876,7 @@ class PostMarkup(object):
         return self.tag_factory.add_tag(cls, name, *args, **kwargs)
 
     def tagify_urls(self, postmarkup):
-
         """ Surrounds urls with url bbcode tags. """
-
-        def repl(match):
-            return u'[url]%s[/url]' % match.group(0)
 
         text_tokens = []
         append = text_tokens.append
@@ -894,8 +890,9 @@ class PostMarkup(object):
             if tag_type == TOKEN_TEXT:
                 if enclosed:
                     append(tag_token)
-                else:                
-                    append(sub(repl, tag_token))                
+                else:
+                    append(sub(r"[url]\g<0>[/url]", tag_token))
+                    #append(sub(repl, tag_token))                
             else:
                 tag_name, _tag_attribs, end_tag = self.parse_tag_token(tag_token)
                 
@@ -946,7 +943,7 @@ class PostMarkup(object):
         original_html = u''
         while original_html != html:
             original_html = html
-            html = cls._re_blank_tags.sub(u"", html)
+            html = cls._re_blank_tags.sub(u" ", html)
         html = _re_break_groups.sub(u"\n", html)
         return html
 
