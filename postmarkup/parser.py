@@ -780,7 +780,7 @@ class PostMarkup(object):
     TOKEN_TAG, TOKEN_PTAG, TOKEN_TEXT = range(3)
 
     #_re_tag_on_line = re.compile(r'\[.*?\].*?$', re.MULTILINE)
-    _re_tag_on_line = re.compile(r'\[.*?\]')
+    _re_tag_on_line = re.compile(r'\[.*?\]', re.UNICODE)
     _re_end_eq = re.compile(r"\]|\=", re.UNICODE)
     _re_quote_end = re.compile(r'\"|\]', re.UNICODE)    
     _re_tag_token = re.compile(r'^\[(\S*?)[\s=]\"?(.*?)\"?\]$', re.UNICODE)
@@ -1160,7 +1160,7 @@ class PostMarkup(object):
                 close_tag(tag)
         
         if paragraphs:
-            nodes.append('</p>')
+            nodes.append(u'</p>')
 
         parser.phase = 2
         # Pass 2
