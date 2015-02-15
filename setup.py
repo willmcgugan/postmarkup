@@ -4,7 +4,7 @@ Converts BBCode (http://en.wikipedia.org/wiki/BBCode) in to HTML and
 XHTML snippets. Always outputs valid XHTML, even from badly nested BBCode.
 """
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 classifiers = """\
 Development Status :: 5 - Production/Stable
@@ -28,18 +28,17 @@ extra = {}
 if sys.version_info >= (3,):
     extra["use_2to3"] = True
 
-setup( install_requires=['setuptools'],
-       name='postmarkup',
-       version = VERSION,
-       author = 'Will McGugan',
-       author_email = 'will@willmcgugan.com',
-       license = "Python Software Foundation License",
-       url = 'http://code.google.com/p/postmarkup/',
-       download_url = 'http://code.google.com/p/postmarkup/downloads/list',
-       platforms = ['any'],
-       description = doclines[0],
-       long_description = '\n'.join(doclines[2:]),       
-       packages = ["postmarkup"],       
-       classifiers = classifiers.splitlines(),       
-       **extra
-       )
+setup(install_requires=['setuptools'],
+      name='postmarkup',
+      version=VERSION,
+      author='Will McGugan',
+      author_email='will@willmcgugan.com',
+      license="Python Software Foundation License",
+      url='http://code.google.com/p/postmarkup/',
+      download_url='http://code.google.com/p/postmarkup/downloads/list',
+      platforms=['any'],
+      description=doclines[0],
+      long_description='\n'.join(doclines[2:]),
+      packages=["postmarkup"],
+      classifiers=classifiers.splitlines(),
+      **extra)
