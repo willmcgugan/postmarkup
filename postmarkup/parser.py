@@ -842,7 +842,7 @@ class PostMarkup(object):
                     while post[end_pos] == u' ':
                         end_pos += 1
                     if post[end_pos] != u'"':
-                        end_pos = post_find(u']', end_pos + 1)
+                        end_pos = post_find(u']', end_pos)
                         if end_pos == -1:
                             return
                         yield TOKEN_TAG, post[pos:end_pos + 1], pos, end_pos + 1
