@@ -73,6 +73,17 @@ class TestPostmarkup(unittest.TestCase):
         for test, result in tests:
             self.assertEqual(markup(test), result)
 
+    def test_quote(self):
+        markup = postmarkup.create(annotate_links=False)
+
+        tests = [(u'[quote]some text[/quote]', u'<blockquote>some text</blockquote>'),
+                 (u'[quote="user=name"]jibber[/quote]', u'<blockquote><em>user=name</em><br/>jibber</blockquote>'),
+                 (u'[quote=]jabber[/quote]', u'<blockquote>jabber</blockquote>'),
+                 ]
+
+        for test, result in tests:
+            self.assertEqual(markup(test), result)
+
     def test_unknowntags(self):
         """Test unknown tags pass through correctly"""
         markup = postmarkup.create(annotate_links=False)
